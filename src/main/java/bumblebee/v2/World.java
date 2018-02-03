@@ -11,6 +11,8 @@ import java.util.Random;
 
 import com.google.common.collect.ImmutableMap;
 
+import static java.util.Collections.emptyMap;
+
 /**
  */
 public class World {
@@ -87,7 +89,7 @@ public class World {
 
     void next() {
         
-        commands.get(bumblebee.next()).run();
+        commands.get(bumblebee.next(emptyMap())).run();
     }
 
     void commandLeft() {
