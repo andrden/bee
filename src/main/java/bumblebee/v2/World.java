@@ -19,8 +19,9 @@ public class World {
     static public int SIZE = 200;
     final Random random = new Random(0);
     static int DOT_RADIUS = 5;
-    double viewAngle = 0.2;
+    double VIEW_ANGLE = 0.2;
     List<Dot> dots = new ArrayList();
+    Dot food;
     Actor actor = new Actor();
 
     Map<String, Runnable> commands = ImmutableMap.of(
@@ -78,7 +79,7 @@ public class World {
             dots.add(new Dot(DOT_RADIUS * 2, pos));
             dots.add(new Dot(SIZE - DOT_RADIUS * 2, pos));
         }
-        dots.add(new Dot(50,100,Color.RED));
+        dots.add(food = new Dot(50,100,Color.RED));
     }
 
     void draw(GraphicsContext gc) {
@@ -88,16 +89,22 @@ public class World {
     }
 
     void next() {
-        
-        commands.get(bumblebee.next(emptyMap())).run();
+        double angleFood = Math.atan2(food.y-actor.y, food.x-actor.x);
+        double normalizedRotation = Math.atan2(Math.sin(actor.rotation),Math.cos(actor.rotation));
+        long eye = Math.round((angleFood - normalizedRotation)/VIEW_ANGLE);
+        //System.out.println("eye="+eye);
+        commands.get(bumblebee.next(ImmutableMap.of(
+                "a",eye==-1 ? "+" : "",
+                "b",eye==0 ? "+" : "",
+                "c",eye==1 ? "+" : ""))).run();
     }
 
     void commandLeft() {
-        actor.rotation -= 0.3;
+        actor.rotation -= VIEW_ANGLE * (1+0.1*random.nextGaussian());
     }
 
     void commandRight() {
-        actor.rotation += 0.3;
+        actor.rotation += VIEW_ANGLE * (1+0.1*random.nextGaussian());
     }
 
     void commandFwd() {
@@ -125,7 +132,7 @@ public class World {
         gc.setLineWidth(1);
         gc.setStroke(Color.BLUE);
         for (int i = -3; i <= 3; i += 2) {
-            Point2D viewTo = actor.direction(actor.rotation + i * viewAngle / 2, 100);
+            Point2D viewTo = actor.direction(actor.rotation + i * VIEW_ANGLE / 2, 100);
             gc.strokeLine(actor.x, actor.y, viewTo.getX(), viewTo.getY());
         }
     }

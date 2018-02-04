@@ -15,6 +15,7 @@ public class Bumblebee {
     }
 
     String next(Map<String,Object> sensors){
+        System.out.println(sensors);
         // creature which never tried some command is not reasonable, so at least need to try them all randomly
         return commands.get(random.nextInt(commands.size()));
     }
