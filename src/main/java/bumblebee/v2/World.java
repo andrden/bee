@@ -30,7 +30,7 @@ public class World {
             "left", this::commandLeft
     );
 
-    Bumblebee bumblebee = new Bumblebee(commands.keySet());
+    Bumblebee bumblebee = new Bumblebee(commands.keySet(), ImmutableMap.of("*", 1L));
 
     static class Dot {
         double x, y;
@@ -67,7 +67,7 @@ public class World {
             return Math.sqrt(a * a + b * b);
         }
 
-        double distance(Point2D p){
+        double distance(Point2D p) {
             return distance(p.getX(), p.getY());
         }
     }
@@ -79,7 +79,7 @@ public class World {
             dots.add(new Dot(DOT_RADIUS * 2, pos));
             dots.add(new Dot(SIZE - DOT_RADIUS * 2, pos));
         }
-        dots.add(food = new Dot(50,100,Color.RED));
+        dots.add(food = new Dot(50, 100, Color.RED));
     }
 
     void draw(GraphicsContext gc) {
@@ -89,22 +89,23 @@ public class World {
     }
 
     void next() {
-        double angleFood = Math.atan2(food.y-actor.y, food.x-actor.x);
-        double normalizedRotation = Math.atan2(Math.sin(actor.rotation),Math.cos(actor.rotation));
-        long eye = Math.round((angleFood - normalizedRotation)/VIEW_ANGLE);
+        double angleFood = Math.atan2(food.y - actor.y, food.x - actor.x);
+        double normalizedRotation = Math.atan2(Math.sin(actor.rotation), Math.cos(actor.rotation));
+        long eye = Math.round((angleFood - normalizedRotation) / VIEW_ANGLE);
         //System.out.println("eye="+eye);
         commands.get(bumblebee.next(ImmutableMap.of(
-                "a",eye==-1 ? "+" : "",
-                "b",eye==0 ? "+" : "",
-                "c",eye==1 ? "+" : ""))).run();
+                "*", "",
+                "a", eye == -1 ? "+" : "",
+                "b", eye == 0 ? "+" : "",
+                "c", eye == 1 ? "+" : ""))).run();
     }
 
     void commandLeft() {
-        actor.rotation -= VIEW_ANGLE * (1+0.1*random.nextGaussian());
+        actor.rotation -= VIEW_ANGLE * (1 + 0.1 * random.nextGaussian());
     }
 
     void commandRight() {
-        actor.rotation += VIEW_ANGLE * (1+0.1*random.nextGaussian());
+        actor.rotation += VIEW_ANGLE * (1 + 0.1 * random.nextGaussian());
     }
 
     void commandFwd() {
@@ -128,7 +129,7 @@ public class World {
         Point2D to = actor.direction(actor.rotation, 15);
         gc.strokeLine(actor.x, actor.y, to.getX(), to.getY());
 
-        gc.setLineDashes(1,10);
+        gc.setLineDashes(1, 10);
         gc.setLineWidth(1);
         gc.setStroke(Color.BLUE);
         for (int i = -3; i <= 3; i += 2) {

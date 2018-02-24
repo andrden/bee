@@ -8,10 +8,12 @@ import java.util.*;
 public class Bumblebee {
     final Random random = new Random(0);
 
-    List<String> commands;
+    final List<String> commands;
+    final Map<String,Long> sensorMotivations;
 
-    public Bumblebee(Set<String> commands) {
+    public Bumblebee(Set<String> commands, Map<String,Long> sensorMotivations) {
         this.commands = new ArrayList<>(commands);
+        this.sensorMotivations = sensorMotivations;
     }
 
     String next(Map<String,Object> sensors){
