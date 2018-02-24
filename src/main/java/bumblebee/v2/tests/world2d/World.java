@@ -1,5 +1,6 @@
-package bumblebee.v2;
+package bumblebee.v2.tests.world2d;
 
+import bumblebee.v2.Bumblebee;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
