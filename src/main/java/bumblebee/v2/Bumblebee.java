@@ -5,6 +5,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.lang.Double.NaN;
 import static java.util.Optional.ofNullable;
@@ -22,13 +23,13 @@ public class Bumblebee {
     Map<String, Stats> commandStats;
     Map<FullState, Stats> fullStateStats = new HashMap<>();
     String lastCommand;
-    Map<String, String> lastSensors;
+    Set<String> lastSensors;
 
     static class FullState {
-        Map<String, String> sensors;
+        Set<String> sensors;
         String command;
 
-        public FullState(Map<String, String> sensors, String command) {
+        public FullState(Set<String> sensors, String command) {
             this.sensors = sensors;
             this.command = command;
         }
@@ -78,18 +79,24 @@ public class Bumblebee {
         commandStats = commands.stream().collect(toMap(identity(), (c) -> new Stats()));
     }
 
-    Long totalMotivation(Map<String, String> sensors) {
-        return sensors.entrySet().stream()
-                .filter(entry -> !entry.getValue().equals(""))
-                .map(entry -> sensorMotivations.get(entry.getKey()))
+    Long totalMotivation(Set<String> sensors) {
+        return sensors.stream()
+                .map(sensorMotivations::get)
                 .filter(Objects::nonNull)
                 .mapToLong(Long::longValue)
                 .sum();
     }
 
-    //@todo change 'sensors' to be just a set of active sensors? (effectively boolean values)
-    public String next(Map<String, String> sensors) {
-        long motivation = totalMotivation(sensors);
+    public String next(Map<String,String> sensors) {
+        return next(new LinkedHashSet<String>(sensors.entrySet().stream()
+                .filter(e -> !e.getValue().equals(""))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet())), null);
+    }
+        // a lot of sensors are effectively boolean values,
+    // if that's not enough, an additional map of float or other values could be added later
+    public String next(LinkedHashSet<String> sensorsSet, String description) {
+        long motivation = totalMotivation(sensorsSet);
         if (lastCommand != null) {
             commandStats.get(lastCommand).addMotivation(motivation);
             fullStateStats.computeIfAbsent(new FullState(lastSensors, lastCommand), fs -> new Stats()).addMotivation(motivation);
@@ -99,7 +106,7 @@ public class Bumblebee {
                 .collect(toMap(identity(), c -> Math.exp(Const.MOTIVATION_UNIT_SCALE * commandStats.get(c).expected())));
         Map<String, Double> fullStateExpectedMotivations = commands.stream()
                 .collect(toMap(identity(), c -> Math.exp(Const.MOTIVATION_UNIT_SCALE *
-                        ofNullable(fullStateStats.get(new FullState(sensors, c))).map(Stats::expected).orElse(Double.NaN))
+                        ofNullable(fullStateStats.get(new FullState(sensorsSet, c))).map(Stats::expected).orElse(Double.NaN))
                 ));
         if (!fullStateExpectedMotivations.values().contains(Double.NaN)) {
             weighted(fullStateExpectedMotivations);
@@ -109,8 +116,9 @@ public class Bumblebee {
             // creature which never tried some command is not reasonable, so at least need to try them all randomly
             lastCommand = commands.get(random.nextInt(commands.size()));
         }
-        System.out.println(sensors + " ∑=" + motivation + " cmd=" + lastCommand + " expected=" + expectedMotivations);
-        lastSensors = sensors;
+        System.out.println(ofNullable(description).orElseGet(sensorsSet::toString)
+                + " ∑=" + motivation + " cmd=" + lastCommand + " expected=" + expectedMotivations);
+        lastSensors = sensorsSet;
         return lastCommand;
     }
 
