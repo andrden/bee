@@ -58,12 +58,13 @@ public class Bumblebee {
         }
 
         Map<String, Double> expectedMotivations = commands.stream()
-                .collect(toMap(identity(), c -> commandStats.get(c).expected()));
+                .collect(toMap(identity(), c -> Math.exp(Const.MOTIVATION_UNIT_SCALE * commandStats.get(c).expected())));
         if (expectedMotivations.values().contains(Double.NaN)) {
             // creature which never tried some command is not reasonable, so at least need to try them all randomly
             lastCommand = commands.get(random.nextInt(commands.size()));
         } else {
-            double rnd = random.nextDouble() * expectedMotivations.values().stream().mapToDouble(Double::doubleValue).sum();
+            double sum = expectedMotivations.values().stream().mapToDouble(Double::doubleValue).sum();
+            double rnd = random.nextDouble() * sum;
             for (String cmd : expectedMotivations.keySet()) {
                 rnd -= expectedMotivations.get(cmd);
                 if (rnd <= 0) {
