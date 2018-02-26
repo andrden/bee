@@ -22,6 +22,7 @@ public class Bumblebee {
 
     Map<String, Stats> commandStats;
     Map<FullState, Stats> fullStateStats = new HashMap<>();
+    Map<FullState, Results> fullStateResults = new HashMap<>();
     String lastCommand;
     Set<String> lastSensors;
 
@@ -72,6 +73,14 @@ public class Bumblebee {
         }
     }
 
+    static class Results {
+        Multiset<Set<String>> set = HashMultiset.create();
+
+        void addResult(Set<String> sensors) {
+            set.add(sensors);
+        }
+    }
+
     public Bumblebee(Set<String> commands, Map<String, Long> sensorMotivations) {
         this.commands = new ArrayList<>(commands);
         this.sensorMotivations = sensorMotivations;
@@ -100,6 +109,7 @@ public class Bumblebee {
         if (lastCommand != null) {
             commandStats.get(lastCommand).addMotivation(motivation);
             fullStateStats.computeIfAbsent(new FullState(lastSensors, lastCommand), fs -> new Stats()).addMotivation(motivation);
+            fullStateResults.computeIfAbsent(new FullState(lastSensors, lastCommand), fs -> new Results()).addResult(sensorsSet);
         }
 
         Map<String, Double> expectedMotivations = commands.stream()
