@@ -48,16 +48,19 @@ public class World {
             if ("food".equals(road)) view.add("food");
             if ("rock".equals(hand)) view.add("hand_rock");
             if ("food".equals(hand)) view.add("hand_food");
-            if(!eatOk && action.equals("eat")) view.add("!"); // attempt to eat non-food
-            if(eatOk && action.equals("eat")) view.add("*"); // eating food
+            if (!eatOk && action.equals("eat")) view.add("!"); // attempt to eat non-food
+            if (eatOk && action.equals("eat")) view.add("*"); // eating food
 
-            String description = "road rock/food, Hand: "+
-                    (view.contains("rock")?"r":" ")+
-                    (view.contains("food")?"f":" ")+" "+
-                    (view.contains("hand_rock")?"R":" ")+
-                    (view.contains("hand_food")?"F":" ")+" "+
-                    (view.contains("!")?"!":" ")+
-                    (view.contains("*")?"*":" ");
+            String description = i + " road rock/food, Hand: " +
+                    (view.contains("rock") ? "r" : " ") +
+                    (view.contains("food") ? "f" : " ") + " " +
+                    (view.contains("hand_rock") ? "R" : " ") +
+                    (view.contains("hand_food") ? "F" : " ") + " " +
+                    (view.contains("!") ? "!" : " ") +
+                    (view.contains("*") ? "*" : " ");
+            if( i==999 ){
+                System.nanoTime();
+            }
             action = bumblebee.next(view, description);
         }
         System.out.println("eatFood=" + eatFood + " eatNoFood=" + eatNoFood + " of " + STEPS + " steps");

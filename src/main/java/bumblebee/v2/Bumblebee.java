@@ -107,6 +107,8 @@ public class Bumblebee {
     Double expectedFutureMotivation(LinkedHashSet<String> sensorsSet, String command) {
         Results results = fullStateResults.get(new FullState(sensorsSet, command));
         if (results == null) return Double.NaN;
+        one step taken, we have results, now we need to check external motivation received at this step,
+                in addition to possible movivation on the next step
         Map<String, Double> expectedAfterStep = commands.stream().collect(Collectors.toMap(identity(),
                 c -> fullStateExpected(results, c)));
         return expectedAfterStep.values().stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
@@ -158,7 +160,8 @@ public class Bumblebee {
             lastCommand = commands.get(random.nextInt(commands.size()));
         }
         System.out.println(ofNullable(description).orElseGet(sensorsSet::toString)
-                + " ∑=" + motivation + " cmd=" + lastCommand + " expected=" + expectedMotivations);
+                + " ∑=" + motivation + " cmd=" + lastCommand
+                + " expected=" + expectedMotivations + " 1step=" + maxThisAndNextStep);
         lastSensors = sensorsSet;
         return lastCommand;
     }
