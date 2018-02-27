@@ -19,7 +19,7 @@ public class World {
         // Can eat from hand only.
         Bumblebee bumblebee = new Bumblebee(ImmutableSet.of("eat", "fwd", "take"),
                 ImmutableMap.of("*", 5L, "!", -1L));
-        final int STEPS = 100;
+        final int STEPS = 1000;
         String action = "";
         int eatNoFood = 0;
         int eatFood = 0;
