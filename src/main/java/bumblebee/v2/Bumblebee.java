@@ -105,13 +105,16 @@ public class Bumblebee {
     }
 
     Double expectedFutureMotivation(LinkedHashSet<String> sensorsSet, String command) {
-        Results results = fullStateResults.get(new FullState(sensorsSet, command));
+        FullState fullState = new FullState(sensorsSet, command);
+        double immediateMotivation = fullStateExpected(fullState);
+        if (isNaN(immediateMotivation)) return NaN;
+        Results results = fullStateResults.get(fullState);
         if (results == null) return Double.NaN;
-        one step taken, we have results, now we need to check external motivation received at this step,
-                in addition to possible movivation on the next step
         Map<String, Double> expectedAfterStep = commands.stream().collect(Collectors.toMap(identity(),
                 c -> fullStateExpected(results, c)));
-        return expectedAfterStep.values().stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
+//      one step taken in prediction, we have results, now we need to check external motivation received at this step,
+//      in addition to possible movivation on the next step
+        return immediateMotivation + expectedAfterStep.values().stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
     }
 
     double fullStateExpected(FullState fullState) {
@@ -147,10 +150,14 @@ public class Bumblebee {
                 .collect(toMap(identity(),
                         c -> Math.exp(Const.MOTIVATION_UNIT_SCALE * expectedFutureMotivation(sensorsSet, c))
                 ));
-        Map<String, Double> maxThisAndNextStep = max(fullStateExpectedMotivations, nextStepExpectedMotivations);
-        if (nextStepExpectedMotivations.values().stream().anyMatch(v -> v > 1)) {
-            System.nanoTime();
-        }
+        Map<String, Double> maxThisAndNextStep = merge(fullStateExpectedMotivations, nextStepExpectedMotivations);
+
+//        f       ∑=0 cmd=eat expected={take=1.0, fwd=1.0, eat=0.8123324770521143} 1step={take=243.00000000000017, fwd=1.0, eat=NaN}
+  - must have resulted in "take", because it's so much promising...
+
+//        if (nextStepExpectedMotivations.values().stream().anyMatch(v -> v > 1)) {
+//            System.nanoTime();
+//        }
         if (!maxThisAndNextStep.values().contains(Double.NaN)) {
             weighted(maxThisAndNextStep);
         } else if (!expectedMotivations.values().contains(Double.NaN)) {
@@ -166,15 +173,20 @@ public class Bumblebee {
         return lastCommand;
     }
 
-    Map<String, Double> max(Map<String, Double> a, Map<String, Double> b) {
-        return a.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> maxDouble(e.getValue(), b.get(e.getKey()))));
+//    Map<String, Double> max(Map<String, Double> a, Map<String, Double> b) {
+//        return a.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> maxDouble(e.getValue(), b.get(e.getKey()))));
+//    }
+
+    Map<String, Double> merge(Map<String, Double> fullStateExpectedMotivations, Map<String, Double> nextStepExpectedMotivations) {
+        return nextStepExpectedMotivations.entrySet().stream().collect(toMap(Map.Entry::getKey,
+                e -> isNaN(e.getValue()) ? fullStateExpectedMotivations.get(e.getKey()) : e.getValue()));
     }
 
-    double maxDouble(double a, double b) {
-        if (isNaN(a)) return b;
-        if (isNaN(b)) return a;
-        return Math.max(a, b);
-    }
+//    double maxDouble(double a, double b) {
+//        if (isNaN(a)) return b;
+//        if (isNaN(b)) return a;
+//        return Math.max(a, b);
+//    }
 
     private void weighted(Map<String, Double> expectedMotivations) {
         double sum = expectedMotivations.values().stream().mapToDouble(Double::doubleValue).sum();

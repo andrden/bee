@@ -23,9 +23,11 @@ public class World {
         String action = "";
         int eatNoFood = 0;
         int eatFood = 0;
+        int roadFood = 0;
         for (int i = 0; i < STEPS; i++) {
             if ("fwd".equals(action)) {
                 boolean food = random.nextDouble() < 0.2; // food is not everywhere
+                if (food) roadFood++;
                 road = food ? "food" : "rock";
             }
             if ("take".equals(action)) {
@@ -58,12 +60,13 @@ public class World {
                     (view.contains("hand_food") ? "F" : " ") + " " +
                     (view.contains("!") ? "!" : " ") +
                     (view.contains("*") ? "*" : " ");
-            if( i==999 ){
+            if (i == 999) {
                 System.nanoTime();
             }
             action = bumblebee.next(view, description);
         }
-        System.out.println("eatFood=" + eatFood + " eatNoFood=" + eatNoFood + " of " + STEPS + " steps");
+        System.out.println("roadFood=" + roadFood + " eatFood=" + eatFood
+                + " eatNoFood=" + eatNoFood + " of " + STEPS + " steps");
         if (eatFood <= eatNoFood) throw new AgentException();
     }
 }
