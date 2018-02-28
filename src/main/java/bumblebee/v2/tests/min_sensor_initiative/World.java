@@ -19,10 +19,13 @@ public class World {
         String action = "";
         String correctAction = "";
         int correct = 0;
+        int foodProvided = 0;
+        int foodEaten = 0;
         final int STEPS = 100;
         for (int i = 0; i < STEPS; i++) {
             boolean ok = action.equals(correctAction);
             boolean food = random.nextDouble() < 0.2; // food is not everywhere
+            if (food) foodProvided++;
 //            if (i > 80 && food) {
 //                System.nanoTime();
 //            }
@@ -33,9 +36,13 @@ public class World {
                     "!", !ok && action.equals("eat") ? "+" : "", // attempt to eat non-food
                     "*", ok && action.equals("eat") ? "+" : "")); // eating food
             correctAction = food ? "eat" : "fwd";
-            if (action.equals(correctAction)) correct++;
+            if (action.equals(correctAction)) {
+                correct++;
+                if (food) foodEaten++;
+            }
         }
-        System.out.println(correct + " correct of " + STEPS + " steps");
+        System.out.println(correct + " correct of " + STEPS + " steps, " +
+                "foodProvided=" + foodProvided + " foodEaten=" + foodEaten);
         if (correct < STEPS * 0.7) throw new AgentException();
     }
 }

@@ -23,16 +23,22 @@ public class World {
         String action = "";
         String correctAction = "";
         int correct = 0;
+        int foodGiven = 0;
+        int foodEaten = 0;
         final int STEPS = 100;
         for (int i = 0; i < STEPS; i++) {
             boolean ok = action.equals(correctAction);
             boolean food = random.nextDouble() < 0.2; // food is not everywhere
+            if (food) foodGiven++;
             LinkedHashSet<String> sensors = new LinkedHashSet<>();
             if ((i & 1) == 0) sensors.add("a");
             sensors.add(food ? "food" : "rock");
             if ((i & 2) == 0) sensors.add("b");
             if (!ok && action.equals("eat")) sensors.add("!"); // attempt to eat non-food
-            if (ok && action.equals("eat")) sensors.add("*");  // eating food
+            if (ok && action.equals("eat")) { // eating food
+                foodEaten++;
+                sensors.add("*");
+            }
             if ((i & 4) == 0) sensors.add("c");
             if ((i & 8) == 0) sensors.add("d");
             action = bumblebee.next(sensors, null);
@@ -40,7 +46,8 @@ public class World {
             correctAction = food ? "eat" : "fwd";
             if (action.equals(correctAction)) correct++;
         }
-        System.out.println(correct + " correct of " + STEPS + " steps");
+        System.out.println(correct + " correct of " + STEPS + " steps, " +
+                "foodGiven=" + foodGiven + " foodEaten=" + foodEaten);
         if (correct < STEPS * 0.7) throw new AgentException();
     }
 }
