@@ -1,0 +1,46 @@
+package bumblebee.v2.tests.false_sensors;
+
+import bumblebee.v2.Bumblebee;
+import bumblebee.v2.tests.AgentException;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.LinkedHashSet;
+import java.util.Random;
+
+public class World {
+    final Random random = new Random(0);
+
+    public World() {
+        // sensors "a", "b", "c" and "d" are just for confusing the agent,
+        // carry no useful information for him
+
+        // only eat if sees food - then gets (+5)
+        // if eats non-food, gets (-1)
+        // so needs sensors to choose right command
+        Bumblebee bumblebee = new Bumblebee(ImmutableSet.of("eat", "fwd"),
+                ImmutableMap.of("*", 5L, "!", -1L));
+        String action = "";
+        String correctAction = "";
+        int correct = 0;
+        final int STEPS = 100;
+        for (int i = 0; i < STEPS; i++) {
+            boolean ok = action.equals(correctAction);
+            boolean food = random.nextDouble() < 0.2; // food is not everywhere
+            LinkedHashSet<String> sensors = new LinkedHashSet<>();
+            if ((i & 1) == 0) sensors.add("a");
+            sensors.add(food ? "food" : "rock");
+            if ((i & 2) == 0) sensors.add("b");
+            if (!ok && action.equals("eat")) sensors.add("!"); // attempt to eat non-food
+            if (ok && action.equals("eat")) sensors.add("*");  // eating food
+            if ((i & 4) == 0) sensors.add("c");
+            if ((i & 8) == 0) sensors.add("d");
+            action = bumblebee.next(sensors, null);
+
+            correctAction = food ? "eat" : "fwd";
+            if (action.equals(correctAction)) correct++;
+        }
+        System.out.println(correct + " correct of " + STEPS + " steps");
+        if (correct < STEPS * 0.7) throw new AgentException();
+    }
+}
