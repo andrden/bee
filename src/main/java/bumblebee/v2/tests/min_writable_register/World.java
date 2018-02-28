@@ -18,7 +18,7 @@ public class World {
         // Can put food or rock to hand (shift to the register).
         // Can eat from hand only.
         Bumblebee bumblebee = new Bumblebee(ImmutableSet.of("eat", "fwd", "take"),
-                ImmutableMap.of("*", 5L, "!", -1L));
+                ImmutableMap.of("*", 5L, "!", -2L));
         final int STEPS = 1000;
         String action = "";
         int eatNoFood = 0;

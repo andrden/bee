@@ -150,18 +150,20 @@ public class Bumblebee {
                 .collect(toMap(identity(),
                         c -> Math.exp(Const.MOTIVATION_UNIT_SCALE * expectedFutureMotivation(sensorsSet, c))
                 ));
-        Map<String, Double> maxThisAndNextStep = merge(fullStateExpectedMotivations, nextStepExpectedMotivations);
+        Map<String, Double> maxThisAndNextStep = merge(expectedMotivations,
+                merge(fullStateExpectedMotivations, nextStepExpectedMotivations));
+        maxThisAndNextStep = nanToAverage(maxThisAndNextStep);
 
 //        f       ∑=0 cmd=eat expected={take=1.0, fwd=1.0, eat=0.8123324770521143} 1step={take=243.00000000000017, fwd=1.0, eat=NaN}
-  - must have resulted in "take", because it's so much promising...
+//        -must have resulted in "take", because it 's so much promising...
 
 //        if (nextStepExpectedMotivations.values().stream().anyMatch(v -> v > 1)) {
 //            System.nanoTime();
 //        }
-        if (!maxThisAndNextStep.values().contains(Double.NaN)) {
+        if (maxThisAndNextStep != null) {
             weighted(maxThisAndNextStep);
-        } else if (!expectedMotivations.values().contains(Double.NaN)) {
-            weighted(expectedMotivations);
+//        } else if (!expectedMotivations.values().contains(Double.NaN)) {
+//            weighted(expectedMotivations);
         } else {
             // creature which never tried some command is not reasonable, so at least need to try them all randomly
             lastCommand = commands.get(random.nextInt(commands.size()));
@@ -173,13 +175,19 @@ public class Bumblebee {
         return lastCommand;
     }
 
+    Map<String, Double> nanToAverage(Map<String, Double> rewards) {
+        OptionalDouble avg = rewards.values().stream().mapToDouble(Double::doubleValue).filter(v -> !isNaN(v)).average();
+        if (!avg.isPresent()) return null; // all values NaN
+        return rewards.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> isNaN(e.getValue()) ? avg.getAsDouble() : e.getValue()));
+    }
+
 //    Map<String, Double> max(Map<String, Double> a, Map<String, Double> b) {
 //        return a.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> maxDouble(e.getValue(), b.get(e.getKey()))));
 //    }
 
-    Map<String, Double> merge(Map<String, Double> fullStateExpectedMotivations, Map<String, Double> nextStepExpectedMotivations) {
-        return nextStepExpectedMotivations.entrySet().stream().collect(toMap(Map.Entry::getKey,
-                e -> isNaN(e.getValue()) ? fullStateExpectedMotivations.get(e.getKey()) : e.getValue()));
+    Map<String, Double> merge(Map<String, Double> fallback, Map<String, Double> priority) {
+        return priority.entrySet().stream().collect(toMap(Map.Entry::getKey,
+                e -> isNaN(e.getValue()) ? fallback.get(e.getKey()) : e.getValue()));
     }
 
 //    double maxDouble(double a, double b) {
