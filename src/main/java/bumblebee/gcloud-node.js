@@ -1,6 +1,11 @@
 // Ubuntu 17.10 with node.js v6.11 works with Javascript6
 // to run just execute: node gcloud-node.js
 // gcloud tool with needed permissions is also in a GCE instance automatically
+
+// Also can run gcloud inside a pod on Kubernetes, also works and has read access to gcr.io Docker registry
+// kubectl run gcloud --image=google/cloud-sdk:alpine -it bash
+// and adding nodejs of recent version v8.9 is easy too in Alpine Linux:
+// apk add --update nodejs
 var http = require('http');
 var url = require('url');
 
