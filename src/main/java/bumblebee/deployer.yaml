@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: deployer
+spec:
+  containers:
+  - name: main
+    image: google/cloud-sdk:alpine
+    command: ["sleep", "9999999"]
+  - name: ambassador
+    image: luksa/kubectl-proxy:1.6.2
+
+# strangely enough, even without ambassador, doing
+# gcloud components install kubectl
+# (tested inside running Pod, however, not a Docker build time)
+# configures access to current cluster and then
+# kubectl create clusterrolebinding root-cluster-admin-binding2 --clusterrole=cluster-admin --user=system:serviceaccount:default:default
+# makes listing Pods and deployments possible with kubectl
+
+# and proxy also works:
+# curl localhost:8001/apis/extensions/v1beta1/namespaces/default/deployments | more
