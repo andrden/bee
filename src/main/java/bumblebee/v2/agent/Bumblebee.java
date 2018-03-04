@@ -59,7 +59,21 @@ public class Bumblebee {
     }
 
     double fullStateExpected(FullState fullState) {
-        return ofNullable(fullStateStats.get(fullState)).map(Stats::expected).orElse(Double.NaN);
+        Stats stats = fullStateStats.get(fullState);
+        if (stats == null) {
+            Map<FullState, Stats> map = new HashMap<>();
+            for (FullState genState : fullState.generalizations()) {
+                Stats genStats = generalizedStats(genState);
+                if (genStats != null) {
+                    map.put(genState, genStats);
+                }
+            }
+            if(!map.isEmpty()) {
+                System.nanoTime();
+            }
+        }
+        return ofNullable(stats).map(Stats::expected).orElse(Double.NaN);
+
     }
 
     double fullStateExpected(Results results, String command) {
@@ -70,14 +84,34 @@ public class Bumblebee {
                 .sum() / size;
     }
 
+    boolean sameStats(FullState fullState, FullState generalizedState) {
+        Stats fullStats = fullStateStats.get(fullState);
+        return fullStateStats.entrySet().stream().allMatch(entry ->
+                !generalizedState.generalizationOf(entry.getKey()) || entry.getValue().equals(fullStats));
+    }
+
+    Stats generalizedStats(FullState generalizedState) {
+        Set<Stats> set = fullStateStats.entrySet().stream()
+                .filter(entry -> generalizedState.generalizationOf(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toSet());
+        return set.size() == 1 ? set.iterator().next() : null;
+    }
+
     // a lot of sensors are effectively boolean values,
     // if that's not enough, an additional map of float or other values could be added later
     public String next(LinkedHashSet<String> sensorsSet, String description) {
         long motivation = totalMotivation(sensorsSet);
         if (lastCommand != null) {
             commandStats.get(lastCommand).addMotivation(motivation);
-            fullStateStats.computeIfAbsent(new FullState(lastSensors, lastCommand), fs -> new Stats()).addMotivation(motivation);
-            fullStateResults.computeIfAbsent(new FullState(lastSensors, lastCommand), fs -> new Results()).addResult(sensorsSet);
+            FullState fullState = new FullState(lastSensors, lastCommand);
+            fullStateStats.computeIfAbsent(fullState, fs -> new Stats()).addMotivation(motivation);
+
+            List<FullState> correctGeneralizations = fullState.generalizations().stream()
+                    .filter(generalized -> sameStats(fullState, generalized))
+                    .collect(Collectors.toList());
+
+            fullStateResults.computeIfAbsent(fullState, fs -> new Results()).addResult(sensorsSet);
         }
 
         Map<String, Double> expectedMotivations = commands.stream()
