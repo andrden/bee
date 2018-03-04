@@ -1,4 +1,4 @@
-package bumblebee.v2;
+package bumblebee.v2.agent;
 
 public interface Const {
     double MOTIVATION_UNIT_SCALE = Math.log(3); // 1 unit = 3 times more likely to try

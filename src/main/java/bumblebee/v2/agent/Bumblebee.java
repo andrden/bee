@@ -1,8 +1,4 @@
-package bumblebee.v2;
-
-
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
+package bumblebee.v2.agent;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,61 +22,6 @@ public class Bumblebee {
     Map<FullState, Results> fullStateResults = new HashMap<>();
     String lastCommand;
     Set<String> lastSensors;
-
-    static class FullState {
-        Set<String> sensors;
-        String command;
-
-        public FullState(Set<String> sensors, String command) {
-            this.sensors = sensors;
-            this.command = command;
-        }
-
-        @Override
-        public String toString() {
-            return command + " " + sensors;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            FullState fullState = (FullState) o;
-            return Objects.equals(sensors, fullState.sensors) &&
-                    Objects.equals(command, fullState.command);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(sensors, command);
-        }
-    }
-
-    static class Stats {
-        Multiset<Long> set = HashMultiset.create();
-
-        void addMotivation(Long motivation) {
-            set.add(motivation);
-        }
-
-        double expected() {
-            int size = set.size();
-            return size < 1 ? NaN : set.elementSet().stream().mapToDouble(value -> value * set.count(value)).sum() / size;
-        }
-
-        @Override
-        public String toString() {
-            return "" + expected();
-        }
-    }
-
-    static class Results {
-        Multiset<Set<String>> set = HashMultiset.create();
-
-        void addResult(Set<String> sensors) {
-            set.add(sensors);
-        }
-    }
 
     public Bumblebee(Set<String> commands, Map<String, Long> sensorMotivations) {
         this.commands = new ArrayList<>(commands);
@@ -128,7 +69,6 @@ public class Bumblebee {
                 .mapToDouble(sensors -> fullStateExpected(new FullState(sensors, command)) * results.set.count(sensors))
                 .sum() / size;
     }
-
 
     // a lot of sensors are effectively boolean values,
     // if that's not enough, an additional map of float or other values could be added later

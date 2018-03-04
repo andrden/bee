@@ -1,6 +1,6 @@
 package bumblebee.v2.tests.world2d;
 
-import bumblebee.v2.Bumblebee;
+import bumblebee.v2.agent.Bumblebee;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -11,8 +11,6 @@ import java.util.Map;
 import java.util.Random;
 
 import com.google.common.collect.ImmutableMap;
-
-import static java.util.Collections.emptyMap;
 
 /**
  */

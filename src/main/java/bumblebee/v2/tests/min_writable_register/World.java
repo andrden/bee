@@ -1,6 +1,6 @@
 package bumblebee.v2.tests.min_writable_register;
 
-import bumblebee.v2.Bumblebee;
+import bumblebee.v2.agent.Bumblebee;
 import bumblebee.v2.tests.AgentException;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
