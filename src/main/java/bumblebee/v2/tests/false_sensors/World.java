@@ -41,7 +41,10 @@ public class World {
             }
             if ((i & 4) == 0) sensors.add("c");
             if ((i & 8) == 0) sensors.add("d");
-            action = bumblebee.next(sensors, null);
+            if (i == 95) {
+                System.nanoTime();
+            }
+            action = bumblebee.next(sensors, i + " " + sensors);
 
             correctAction = food ? "eat" : "fwd";
             if (action.equals(correctAction)) correct++;
