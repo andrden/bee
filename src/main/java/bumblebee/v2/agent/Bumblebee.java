@@ -65,7 +65,10 @@ public class Bumblebee {
             for (FullState genState : fullState.generalizations()) {
                 Stats genStats = generalizedStats(genState);
                 if (genStats != null) {
-                    map.put(genState, genStats);
+                    if( !containsGeneralization(genState, genStats, map)) {
+                        cleanUpWithGeneralization(genState, genStats, map);
+                        map.put(genState, genStats);
+                    }
                 }
             }
             if(!map.isEmpty()) {
@@ -73,7 +76,17 @@ public class Bumblebee {
             }
         }
         return ofNullable(stats).map(Stats::expected).orElse(Double.NaN);
+    }
 
+    void cleanUpWithGeneralization(FullState newState, Stats newStats, Map<FullState, Stats> map){
+        map.keySet().removeIf(s -> newState.isGeneralizationOf(s) && newStats.equals(map.get(s)));
+    }
+
+    boolean containsGeneralization(FullState newState, Stats newStats, Map<FullState, Stats> map){
+        for(FullState s : map.keySet()){
+            if( s.isGeneralizationOf(newState) && map.get(s).equals(newStats)) return true;
+        }
+        return false;
     }
 
     double fullStateExpected(Results results, String command) {
@@ -87,12 +100,12 @@ public class Bumblebee {
     boolean sameStats(FullState fullState, FullState generalizedState) {
         Stats fullStats = fullStateStats.get(fullState);
         return fullStateStats.entrySet().stream().allMatch(entry ->
-                !generalizedState.generalizationOf(entry.getKey()) || entry.getValue().equals(fullStats));
+                !generalizedState.isGeneralizationOf(entry.getKey()) || entry.getValue().equals(fullStats));
     }
 
     Stats generalizedStats(FullState generalizedState) {
         Set<Stats> set = fullStateStats.entrySet().stream()
-                .filter(entry -> generalizedState.generalizationOf(entry.getKey()))
+                .filter(entry -> generalizedState.isGeneralizationOf(entry.getKey()))
                 .map(Map.Entry::getValue)
                 .collect(Collectors.toSet());
         return set.size() == 1 ? set.iterator().next() : null;

@@ -35,7 +35,7 @@ class FullState {
         return Objects.hash(sensors, command);
     }
 
-    boolean generalizationOf(FullState other) {
+    boolean isGeneralizationOf(FullState other) {
         return command.equals(other.command) && other.sensors.containsAll(sensors);
     }
 
