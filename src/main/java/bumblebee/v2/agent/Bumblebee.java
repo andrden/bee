@@ -23,6 +23,8 @@ public class Bumblebee {
     String lastCommand;
     Set<String> lastSensors;
 
+    Map<String, Double> expectedMotivations; // command->avg lifetime motivation, recomputed on each next()
+
     public Bumblebee(Set<String> commands, Map<String, Long> sensorMotivations) {
         this.commands = new ArrayList<>(commands);
         this.sensorMotivations = sensorMotivations;
@@ -46,12 +48,29 @@ public class Bumblebee {
     }
 
     Double expectedFutureMotivation(LinkedHashSet<String> sensorsSet, String command) {
+        final int FULL_DEPTH = 2;
+        return expectedFutureMotivation(sensorsSet, command, FULL_DEPTH);
+    }
+
+    double expectedFutureMotivation(Results results, String command, int depth) {
+        if (depth == 0) {
+            return fullStateExpected(results, command);
+        }
+
+        int size = results.set.size();
+        if (size < 1) return NaN;
+        return results.set.elementSet().stream()
+                .mapToDouble(sensors -> expectedFutureMotivation(sensors, command, depth) * results.set.count(sensors))
+                .sum() / size;
+    }
+
+    Double expectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
         FullState fullState = new FullState(sensorsSet, command);
         double immediateMotivation = fullStateExpected(fullState);
         if (isNaN(immediateMotivation)) return NaN;
         Results results = fullStateResults.get(fullState);
         if (results == null) return Double.NaN;
-        if(results.set.elementSet().size()==1 && results.set.elementSet().iterator().next().equals(sensorsSet)){
+        if (results.set.elementSet().size() == 1 && results.set.elementSet().iterator().next().equals(sensorsSet)) {
 //            what if second step is garanteed to change nothing, like 'rtake' in state 'lhand_food'?
 //                    Then it's going to have the same future motivation as direct step 'leat'!
 
@@ -59,9 +78,9 @@ public class Bumblebee {
             return Double.NaN;
         }
 
-
         Map<String, Double> expectedAfterStep = commands.stream().collect(Collectors.toMap(identity(),
-                c -> fullStateExpected(results, c)));
+                c -> expectedFutureMotivation(results, c, depth - 1)));
+        expectedAfterStep = merge(expectedMotivations, expectedAfterStep);
 //      one step taken in prediction, we have results, now we need to check external motivation received at this step,
 //      in addition to possible movivation on the next step
         return immediateMotivation + expectedAfterStep.values().stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
@@ -107,11 +126,11 @@ public class Bumblebee {
                 .sum() / size;
     }
 
-    boolean sameStats(FullState fullState, FullState generalizedState) {
-        Stats fullStats = fullStateStats.get(fullState);
-        return fullStateStats.entrySet().stream().allMatch(entry ->
-                !generalizedState.isGeneralizationOf(entry.getKey()) || entry.getValue().equals(fullStats));
-    }
+//    boolean sameStats(FullState fullState, FullState generalizedState) {
+//        Stats fullStats = fullStateStats.get(fullState);
+//        return fullStateStats.entrySet().stream().allMatch(entry ->
+//                !generalizedState.isGeneralizationOf(entry.getKey()) || entry.getValue().equals(fullStats));
+//    }
 
     double generalizedStats(FullState generalizedState) {
         Set<Double> set = fullStateStats.entrySet().stream()
@@ -138,15 +157,15 @@ public class Bumblebee {
             fullStateResults.computeIfAbsent(fullState, fs -> new Results()).addResult(sensorsSet);
         }
 
-        Map<String, Double> expectedMotivations = commands.stream()
-                .collect(toMap(identity(), c ->  commandStats.get(c).expected()));
+        expectedMotivations = commands.stream() // next step, now recompute
+                .collect(toMap(identity(), c -> commandStats.get(c).expected()));
         Map<String, Double> fullStateExpectedMotivations = commands.stream()
                 .collect(toMap(identity(),
                         c -> fullStateExpected(new FullState(sensorsSet, c))
                 ));
         Map<String, Double> nextStepExpectedMotivations = commands.stream()
                 .collect(toMap(identity(),
-                        c ->  expectedFutureMotivation(sensorsSet, c)
+                        c -> expectedFutureMotivation(sensorsSet, c)
                 ));
         Map<String, Double> maxThisAndNextStep = merge(expectedMotivations,
                 merge(fullStateExpectedMotivations, nextStepExpectedMotivations));
@@ -199,7 +218,7 @@ public class Bumblebee {
                 .mapToDouble(v -> Math.exp(Const.MOTIVATION_UNIT_SCALE * v)).sum();
         double rnd = random.nextDouble() * sum;
         for (String cmd : expectedMotivations.keySet()) {
-            rnd -= Math.exp(Const.MOTIVATION_UNIT_SCALE *expectedMotivations.get(cmd));
+            rnd -= Math.exp(Const.MOTIVATION_UNIT_SCALE * expectedMotivations.get(cmd));
             if (rnd <= 0) {
                 lastCommand = cmd;
                 break;

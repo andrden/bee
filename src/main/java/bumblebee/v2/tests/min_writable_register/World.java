@@ -60,7 +60,7 @@ public class World {
                     (view.contains("hand_food") ? "F" : " ") + " " +
                     (view.contains("!") ? "!" : " ") +
                     (view.contains("*") ? "*" : " ");
-            if (i == 999) {
+            if (i == 998) {
                 System.nanoTime();
             }
             action = bumblebee.next(view, description);
@@ -68,5 +68,6 @@ public class World {
         System.out.println("roadFood=" + roadFood + " eatFood=" + eatFood
                 + " eatNoFood=" + eatNoFood + " of " + STEPS + " steps");
         if (eatFood <= eatNoFood) throw new AgentException();
+        if (roadFood < STEPS / 10) throw new AgentException(); // not doing enough 'fwd'-s
     }
 }
