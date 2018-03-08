@@ -19,7 +19,7 @@ public class World {
             boolean eat = "eat".equals(action);
             if (eat) eats++;
             Set<String> sensors = eat ? Set.of("*") : Set.of();
-            if (i == 97) {
+            if (i == 98) {
                 System.nanoTime();
             }
             action = bumblebee.next(new LinkedHashSet<String>(sensors), i + " " + sensors);

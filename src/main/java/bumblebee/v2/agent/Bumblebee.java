@@ -2,6 +2,7 @@ package bumblebee.v2.agent;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
@@ -13,6 +14,7 @@ import static java.util.stream.Collectors.toMap;
  */
 public class Bumblebee {
     final Random random = new Random(0);
+    final int FULL_DEPTH = 2;
 
     final List<String> commands;
     final Map<String, Long> sensorMotivations;
@@ -23,7 +25,17 @@ public class Bumblebee {
     String lastCommand;
     Set<String> lastSensors;
 
-    Map<String, Double> expectedMotivations; // command->avg lifetime motivation, recomputed on each next()
+    class Expectations {
+        Map<String, Double> byCommand; // command->avg lifetime motivation, recomputed on each next()
+        List<Map<FullState,Double>> byDepth;
+
+        public Expectations(Map<String, Double> byCommand) {
+            this.byCommand = byCommand;
+            byDepth = IntStream.range(0, FULL_DEPTH+1)
+                    .mapToObj(i -> new HashMap<FullState,Double>())
+                    .collect(Collectors.toList());
+        }
+    }
 
     public Bumblebee(Set<String> commands, Map<String, Long> sensorMotivations) {
         this.commands = new ArrayList<>(commands);
@@ -45,11 +57,6 @@ public class Bumblebee {
                 .filter(e -> !e.getValue().equals(""))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet())), null);
-    }
-
-    Double expectedFutureMotivation(LinkedHashSet<String> sensorsSet, String command) {
-        final int FULL_DEPTH = 2;
-        return expectedFutureMotivation(sensorsSet, command, FULL_DEPTH);
     }
 
     double expectedFutureMotivation(Results results, String command, int depth) {
@@ -79,15 +86,30 @@ public class Bumblebee {
             return Double.NaN;
         }
 
+        Map<String, Double> expectedWithoutThisCmd = commands.stream().collect(Collectors.toMap(identity(),
+                c -> depth == 1
+                        ? fullStateExpected(new FullState(sensorsSet, c))
+                        : expectedFutureMotivation(sensorsSet, c, depth - 1)));
         Map<String, Double> expectedAfterStep = commands.stream().collect(Collectors.toMap(identity(),
                 c -> expectedFutureMotivation(results, c, depth - 1)));
         expectedAfterStep = merge(expectedMotivations, expectedAfterStep);
+        if (immediateMotivation == 0 && expectedAfterStep.entrySet().stream()
+                .allMatch(e -> Objects.equals(e.getValue(), expectedWithoutThisCmd.get(e.getKey())))) {
+            return Double.NaN; // compare if this command indeed produces any effect, otherwise it's useless
+        }
 //      one step taken in prediction, we have results, now we need to check external motivation received at this step,
 //      in addition to possible movivation on the next step
         return immediateMotivation + expectedAfterStep.values().stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
     }
 
+    double sameToNaN(double value, double compare) {
+        if (value == compare) return NaN;
+        return value;
+    }
+
     double fullStateExpected(FullState fullState) {
+        need to cache fullStateExpected for each depth when processing each next()
+
         Stats stats = fullStateStats.get(fullState);
         if (stats != null) return stats.expected();
         Map<FullState, Double> map = new HashMap<>();
@@ -161,13 +183,9 @@ public class Bumblebee {
         expectedMotivations = commands.stream() // next step, now recompute
                 .collect(toMap(identity(), c -> commandStats.get(c).expected()));
         Map<String, Double> fullStateExpectedMotivations = commands.stream()
-                .collect(toMap(identity(),
-                        c -> fullStateExpected(new FullState(sensorsSet, c))
-                ));
+                .collect(toMap(identity(), c -> fullStateExpected(new FullState(sensorsSet, c))));
         Map<String, Double> nextStepExpectedMotivations = commands.stream()
-                .collect(toMap(identity(),
-                        c -> expectedFutureMotivation(sensorsSet, c)
-                ));
+                .collect(toMap(identity(), c -> expectedFutureMotivation(sensorsSet, c, FULL_DEPTH)));
         Map<String, Double> maxThisAndNextStep = merge(expectedMotivations,
                 merge(fullStateExpectedMotivations, nextStepExpectedMotivations));
         maxThisAndNextStep = nanToAverage(maxThisAndNextStep);
