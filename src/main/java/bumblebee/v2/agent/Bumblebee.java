@@ -70,7 +70,8 @@ public class Bumblebee {
         if (isNaN(immediateMotivation)) return NaN;
         Results results = fullStateResults.get(fullState);
         if (results == null) return Double.NaN;
-        if (results.set.elementSet().size() == 1 && results.set.elementSet().iterator().next().equals(sensorsSet)) {
+        if (immediateMotivation == 0 &&
+                results.set.elementSet().size() == 1 && results.set.elementSet().iterator().next().equals(sensorsSet)) {
 //            what if second step is garanteed to change nothing, like 'rtake' in state 'lhand_food'?
 //                    Then it's going to have the same future motivation as direct step 'leat'!
 
