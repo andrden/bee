@@ -51,6 +51,15 @@ public class Bumblebee {
         if (isNaN(immediateMotivation)) return NaN;
         Results results = fullStateResults.get(fullState);
         if (results == null) return Double.NaN;
+        if(results.set.elementSet().size()==1 && results.set.elementSet().iterator().next().equals(sensorsSet)){
+//            what if second step is garanteed to change nothing, like 'rtake' in state 'lhand_food'?
+//                    Then it's going to have the same future motivation as direct step 'leat'!
+
+            // command changes nothing, so let's say we don't know its results or purpose in this state
+            return Double.NaN;
+        }
+
+
         Map<String, Double> expectedAfterStep = commands.stream().collect(Collectors.toMap(identity(),
                 c -> fullStateExpected(results, c)));
 //      one step taken in prediction, we have results, now we need to check external motivation received at this step,
