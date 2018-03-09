@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 class FullState {
-    Set<String> sensors;
-    String command;
+    final Set<String> sensors;
+    final String command;
 
     public FullState(Set<String> sensors, String command) {
         this.sensors = sensors;

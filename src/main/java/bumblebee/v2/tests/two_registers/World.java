@@ -13,9 +13,9 @@ public class World {
 
     int eatNoFood = 0;
     int eatFood = 0;
-    int roadFood = 0;
 
     class Register {
+        int roadFood = 0;
         char side;
 
         public Register(char side) {
@@ -91,7 +91,7 @@ public class World {
                     (view.contains("rhand_food") ? "F" : " ") + " " +
                     (view.contains("!") ? "!" : " ") +
                     (view.contains("*") ? "*" : " ");
-            if (i == 996) {
+            if (i == 995) {
                 System.nanoTime(); // rtake = leat is ridiculous
 
 //996 road rock/food, Hand:     F |         ∑=0 cmd=leat
@@ -100,7 +100,8 @@ public class World {
             }
             action = bumblebee.next(view, description);
         }
-        System.out.println("roadFood=" + roadFood + " eatFood=" + eatFood
+        System.out.println("roadFood(l/r)=" + left.roadFood + "/" + right.roadFood
+                + " eatFood=" + eatFood
                 + " eatNoFood=" + eatNoFood + " of " + STEPS + " steps");
         if (eatFood <= eatNoFood) throw new AgentException();
     }

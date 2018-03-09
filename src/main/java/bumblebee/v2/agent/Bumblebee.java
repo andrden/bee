@@ -86,8 +86,11 @@ public class Bumblebee {
     double computeExpectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
         FullState fullState = new FullState(sensorsSet, command);
         double immediateMotivation = fullStateExpected(fullState);
+        if (command.equals("rtake") && depth == 2) {
+            System.nanoTime();
+        }
         if (isNaN(immediateMotivation)) return NaN;
-        Results results = fullStateResults.get(fullState);
+        Results results = generalizedStateResults(fullState);
         if (results == null) return Double.NaN;
         if (immediateMotivation == 0 &&
                 results.set.elementSet().size() == 1 && results.set.elementSet().iterator().next().equals(sensorsSet)) {
@@ -115,9 +118,20 @@ public class Bumblebee {
         return immediateMotivation + expectedAfterStep.values().stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
     }
 
-    double sameToNaN(double value, double compare) {
-        if (value == compare) return NaN;
-        return value;
+    Results generalizedStateResults(FullState fullState){
+        Results results = fullStateResults.get(fullState);
+        if( results!=null ) return results;
+        for (FullState genState : fullState.generalizations()) {
+            generalizedResults(genState);
+        }
+        return null;
+    }
+
+    double generalizedResults(FullState generalizedState) {
+        Map<FullState, Results> filtered = fullStateResults.entrySet().stream()
+                .filter(entry -> generalizedState.isGeneralizationOf(entry.getKey()))
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return 0;
     }
 
     double fullStateExpected(FullState fullState) {
@@ -165,12 +179,6 @@ public class Bumblebee {
                 .sum() / size;
     }
 
-//    boolean sameStats(FullState fullState, FullState generalizedState) {
-//        Stats fullStats = fullStateStats.get(fullState);
-//        return fullStateStats.entrySet().stream().allMatch(entry ->
-//                !generalizedState.isGeneralizationOf(entry.getKey()) || entry.getValue().equals(fullStats));
-//    }
-
     double generalizedStats(FullState generalizedState) {
         Set<Double> set = fullStateStats.entrySet().stream()
                 .filter(entry -> generalizedState.isGeneralizationOf(entry.getKey()))
@@ -188,11 +196,6 @@ public class Bumblebee {
             commandStats.get(lastCommand).addMotivation(motivation);
             FullState fullState = new FullState(lastSensors, lastCommand);
             fullStateStats.computeIfAbsent(fullState, fs -> new Stats()).addMotivation(motivation);
-
-//            List<FullState> correctGeneralizations = fullState.generalizations().stream()
-//                    .filter(generalized -> sameStats(fullState, generalized))
-//                    .collect(Collectors.toList());
-
             fullStateResults.computeIfAbsent(fullState, fs -> new Results()).addResult(sensorsSet);
         }
 
@@ -223,7 +226,9 @@ public class Bumblebee {
         }
         System.out.println(ofNullable(description).orElseGet(sensorsSet::toString)
                 + " ∑=" + motivation + " cmd=" + lastCommand
-                + " expected=" + expectations.byCommand + " 1step=" + maxThisAndNextStep);
+                + " 1step=" + maxThisAndNextStep
+                + " byCmd=" + expectations.byCommand
+        );
         lastSensors = sensorsSet;
         return lastCommand;
     }
