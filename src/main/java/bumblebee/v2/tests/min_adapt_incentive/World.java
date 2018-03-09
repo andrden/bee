@@ -25,6 +25,6 @@ public class World {
             action = bumblebee.next(new LinkedHashSet<String>(sensors), i + " " + sensors);
         }
         System.out.println(eats + " correct of " + STEPS + " steps");
-        if (eats < STEPS * 0.7) throw new AgentException();
+        if (eats < STEPS * 0.8) throw new AgentException();
     }
 }

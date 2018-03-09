@@ -14,7 +14,7 @@ import static java.util.stream.Collectors.toMap;
  */
 public class Bumblebee {
     final Random random = new Random(0);
-    final int FULL_DEPTH = 2;
+    static final int FULL_DEPTH = 2;
 
     final List<String> commands;
     final Map<String, Long> sensorMotivations;
@@ -25,15 +25,21 @@ public class Bumblebee {
     String lastCommand;
     Set<String> lastSensors;
 
-    class Expectations {
+    Expectations expectations;
+
+    static class Expectations {
         Map<String, Double> byCommand; // command->avg lifetime motivation, recomputed on each next()
-        List<Map<FullState,Double>> byDepth;
+        List<Map<FullState, Double>> byDepth;
 
         public Expectations(Map<String, Double> byCommand) {
             this.byCommand = byCommand;
-            byDepth = IntStream.range(0, FULL_DEPTH+1)
-                    .mapToObj(i -> new HashMap<FullState,Double>())
+            byDepth = IntStream.range(0, FULL_DEPTH + 1)
+                    .mapToObj(i -> new HashMap<FullState, Double>())
                     .collect(Collectors.toList());
+        }
+
+        Map<FullState, Double> depth(int i) {
+            return byDepth.get(i);
         }
     }
 
@@ -72,6 +78,12 @@ public class Bumblebee {
     }
 
     Double expectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
+        FullState key = new FullState(sensorsSet, command);
+        return expectations.depth(depth).computeIfAbsent(key,
+                k -> computeExpectedFutureMotivation(sensorsSet, command, depth));
+    }
+
+    double computeExpectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
         FullState fullState = new FullState(sensorsSet, command);
         double immediateMotivation = fullStateExpected(fullState);
         if (isNaN(immediateMotivation)) return NaN;
@@ -83,7 +95,7 @@ public class Bumblebee {
 //                    Then it's going to have the same future motivation as direct step 'leat'!
 
             // command changes nothing, so let's say we don't know its results or purpose in this state
-            return Double.NaN;
+            return Double.NEGATIVE_INFINITY;
         }
 
         Map<String, Double> expectedWithoutThisCmd = commands.stream().collect(Collectors.toMap(identity(),
@@ -92,10 +104,11 @@ public class Bumblebee {
                         : expectedFutureMotivation(sensorsSet, c, depth - 1)));
         Map<String, Double> expectedAfterStep = commands.stream().collect(Collectors.toMap(identity(),
                 c -> expectedFutureMotivation(results, c, depth - 1)));
-        expectedAfterStep = merge(expectedMotivations, expectedAfterStep);
-        if (immediateMotivation == 0 && expectedAfterStep.entrySet().stream()
-                .allMatch(e -> Objects.equals(e.getValue(), expectedWithoutThisCmd.get(e.getKey())))) {
-            return Double.NaN; // compare if this command indeed produces any effect, otherwise it's useless
+        expectedAfterStep = merge(expectations.byCommand, expectedAfterStep);
+        boolean noChange = expectedAfterStep.entrySet().stream()
+                .allMatch(e -> Objects.equals(e.getValue(), expectedWithoutThisCmd.get(e.getKey())));
+        if (immediateMotivation == 0 && noChange) {
+            return Double.NEGATIVE_INFINITY; // compare if this command indeed produces any effect, otherwise it's useless
         }
 //      one step taken in prediction, we have results, now we need to check external motivation received at this step,
 //      in addition to possible movivation on the next step
@@ -108,8 +121,11 @@ public class Bumblebee {
     }
 
     double fullStateExpected(FullState fullState) {
-        need to cache fullStateExpected for each depth when processing each next()
+        //need to cache fullStateExpected for each depth when processing each next()
+        return expectations.depth(0).computeIfAbsent(fullState, this::computeFullStateExpected);
+    }
 
+    double computeFullStateExpected(FullState fullState) {
         Stats stats = fullStateStats.get(fullState);
         if (stats != null) return stats.expected();
         Map<FullState, Double> map = new HashMap<>();
@@ -180,13 +196,14 @@ public class Bumblebee {
             fullStateResults.computeIfAbsent(fullState, fs -> new Results()).addResult(sensorsSet);
         }
 
-        expectedMotivations = commands.stream() // next step, now recompute
-                .collect(toMap(identity(), c -> commandStats.get(c).expected()));
+        // next step, now recompute:
+        expectations = new Expectations(commands.stream()
+                .collect(toMap(identity(), c -> commandStats.get(c).expected())));
         Map<String, Double> fullStateExpectedMotivations = commands.stream()
                 .collect(toMap(identity(), c -> fullStateExpected(new FullState(sensorsSet, c))));
         Map<String, Double> nextStepExpectedMotivations = commands.stream()
                 .collect(toMap(identity(), c -> expectedFutureMotivation(sensorsSet, c, FULL_DEPTH)));
-        Map<String, Double> maxThisAndNextStep = merge(expectedMotivations,
+        Map<String, Double> maxThisAndNextStep = finalMerge(expectations.byCommand,
                 merge(fullStateExpectedMotivations, nextStepExpectedMotivations));
         maxThisAndNextStep = nanToAverage(maxThisAndNextStep);
 
@@ -206,7 +223,7 @@ public class Bumblebee {
         }
         System.out.println(ofNullable(description).orElseGet(sensorsSet::toString)
                 + " ∑=" + motivation + " cmd=" + lastCommand
-                + " expected=" + expectedMotivations + " 1step=" + maxThisAndNextStep);
+                + " expected=" + expectations.byCommand + " 1step=" + maxThisAndNextStep);
         lastSensors = sensorsSet;
         return lastCommand;
     }
@@ -217,20 +234,17 @@ public class Bumblebee {
         return rewards.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> isNaN(e.getValue()) ? avg.getAsDouble() : e.getValue()));
     }
 
-//    Map<String, Double> max(Map<String, Double> a, Map<String, Double> b) {
-//        return a.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> maxDouble(e.getValue(), b.get(e.getKey()))));
-//    }
-
     Map<String, Double> merge(Map<String, Double> fallback, Map<String, Double> priority) {
         return priority.entrySet().stream().collect(toMap(Map.Entry::getKey,
                 e -> isNaN(e.getValue()) ? fallback.get(e.getKey()) : e.getValue()));
     }
 
-//    double maxDouble(double a, double b) {
-//        if (isNaN(a)) return b;
-//        if (isNaN(b)) return a;
-//        return Math.max(a, b);
-//    }
+    Map<String, Double> finalMerge(Map<String, Double> fallback, Map<String, Double> priority) {
+        return priority.entrySet().stream().collect(toMap(Map.Entry::getKey,
+                e -> isNaN(e.getValue()) || e.getValue() == Double.NEGATIVE_INFINITY
+                        ? fallback.get(e.getKey())
+                        : e.getValue()));
+    }
 
     private void weighted(Map<String, Double> expectedMotivations) {
         double sum = expectedMotivations.values().stream()
