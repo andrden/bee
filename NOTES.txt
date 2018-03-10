@@ -1,0 +1,17 @@
+===============================================================================
+World: two_registers
+Proposed action "rtake"
+History for sensor:
+key = "rhand_food" <== interested in this sensor
+value = {HashMap@1322}  size = 2
+ 0 = {HashMap$Node@1325} "rtake [lhand_rock]" -> "false" - often coincided, rock on the left are abundant
+ 1 = {HashMap$Node@1326} "rtake [rfood]" -> "true" - signal, real cause-result connection, hidden in rock noise
+
+Can we see the signal buried in the noise?
+Or do we have to conduct directed experiments only to disambiguate?
+
+If we don't factor a problem into almost independent parts,
+we'll have to treat any newly encountered sensor value as suspecious
+and try to re-check all our existing rules?
+===============================================================================
+
