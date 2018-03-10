@@ -58,8 +58,8 @@ public class World {
         // Can eat from hand only.
         Bumblebee bumblebee = new Bumblebee(
                 ImmutableSet.of("leat", "lfwd", "ltake", "reat", "rfwd", "rtake"),
-                ImmutableMap.of("*", 5L, "!", -2L));
-        final int STEPS = 1000;
+                ImmutableMap.of("*", 5L, "!", -1L));
+        final int STEPS = 800;
         String action = "";
         for (int i = 0; i < STEPS; i++) {
             boolean leftEatOk = left.react(action);
@@ -91,7 +91,7 @@ public class World {
                     (view.contains("rhand_food") ? "F" : " ") + " " +
                     (view.contains("!") ? "!" : " ") +
                     (view.contains("*") ? "*" : " ");
-            if (i == 995) {
+            if (i == 774) {
                 System.nanoTime(); // rtake = leat is ridiculous
 
 //996 road rock/food, Hand:     F |         ∑=0 cmd=leat

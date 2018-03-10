@@ -11,6 +11,7 @@ import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
 import static java.util.Optional.ofNullable;
 import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
@@ -144,7 +145,14 @@ public class Bumblebee {
                 .filter(entry -> !entry.getValue().isEmpty())
                 .collect(toMap(Map.Entry::getKey,
                 entry -> entry.getValue().values().stream().mapToDouble(bool -> bool ? 1 : 0).average().getAsDouble()));
-        return null;
+        results = new Results();
+        for(int i : IntStream.range(0,10).boxed().collect(toList())){
+            // not actually correct, but some approximation
+            results.addResult(possibleSensors.stream().filter(sensorExpectations::containsKey)
+                .filter(sensor -> sensorExpectations.get(sensor) > random.nextDouble())
+                .collect(toSet()));
+        };
+        return results;
     }
 
     Map<String, Boolean> generalizedResults(FullState generalizedState) {
