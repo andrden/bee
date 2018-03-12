@@ -9,7 +9,9 @@ public class Main {
 //            new bumblebee.v2.tests.min_writable_register.World();
 //            new bumblebee.v2.tests.false_sensors.World();
 //            new bumblebee.v2.tests.false_sensors_register.World();
-            new bumblebee.v2.tests.two_registers.World();
+
+//            new bumblebee.v2.tests.two_registers.World();
+            new bumblebee.v2.tests.chase_1d.World();
             //            bumblebee.v2.tests.world2d.View.main(new String[0]);
         } catch (Exception e) {
             System.out.println("PROBLEM:::: !!!!!!! EXCEPTION ===============");
