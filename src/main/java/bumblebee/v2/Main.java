@@ -2,6 +2,10 @@ package bumblebee.v2;
 
 public class Main {
     public static void main(String[] args) {
+        DataExtractAgent dataExtract = new DataExtractAgent();
+        dataExtract.extractLearn("<div class='big blue'> <span class='sdk'><a href='http://bb.com'>[[[dog]]]</a>  </span>\n</div>");
+        dataExtract.extract("<div class='big blue'> <span class='sdk'><a href='http://bb2.com'>frog</a>  </span>\n</div>");
+
         try {
             new bumblebee.v2.tests.min_adapt_incentive.World();
 //            new bumblebee.v2.tests.first_below_zero.World();
