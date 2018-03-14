@@ -18,8 +18,7 @@ public class World {
         // Can pass food or rock on his way.
         // Can put food or rock to hand (shift to the register).
         // Can eat from hand only.
-        Bumblebee bumblebee = new Bumblebee(ImmutableSet.of("eat", "fwd", "take"),
-                ImmutableMap.of("*", 5L, "!", -2L));
+        Bumblebee bumblebee = new Bumblebee(ImmutableSet.of("eat", "fwd", "take"));
         final int STEPS = 1000;
         String action = "";
         int eatNoFood = 0;
@@ -54,8 +53,9 @@ public class World {
             if ("food".equals(road)) view.add("food");
             if ("rock".equals(hand)) view.add("hand_rock");
             if ("food".equals(hand)) view.add("hand_food");
-            if (!eatOk && action.equals("eat")) view.add("!"); // attempt to eat non-food
-            if (eatOk && action.equals("eat")) view.add("*"); // eating food
+            long reward=0;
+            if (!eatOk && action.equals("eat")) reward=-2; // attempt to eat non-food
+            if (eatOk && action.equals("eat")) reward=5; // eating food
 
             String description = i + " road rock/food, Hand: " +
                     (view.contains("a") ? "a" : " ") +
@@ -70,7 +70,7 @@ public class World {
             if (i == 999) {
                 System.nanoTime();
             }
-            action = bumblebee.next(view, description);
+            action = bumblebee.next(reward, view, description);
         }
         System.out.println("roadFood=" + roadFood + " eatFood=" + eatFood
                 + " eatNoFood=" + eatNoFood + " of " + STEPS + " steps");

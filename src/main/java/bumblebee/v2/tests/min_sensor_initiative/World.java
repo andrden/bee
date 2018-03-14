@@ -14,8 +14,7 @@ public class World {
         // only eat if sees food - then gets (+5)
         // if eats non-food, gets (-1)
         // so needs sensors to choose right command
-        Bumblebee bumblebee = new Bumblebee(ImmutableSet.of("eat", "fwd"),
-                ImmutableMap.of("*", 5L, "!", -1L));
+        Bumblebee bumblebee = new Bumblebee(ImmutableSet.of("eat", "fwd"));
         String action = "";
         String correctAction = "";
         int correct = 0;
@@ -30,11 +29,12 @@ public class World {
 //                System.nanoTime();
 //            }
 
-            action = bumblebee.next(ImmutableMap.of(
+            long reward=0;
+            if(!ok && action.equals("eat")) reward=-1; // attempt to eat non-food
+            if(ok && action.equals("eat")) reward=5; // eating food
+            action = bumblebee.next(reward, ImmutableMap.of(
                     "rock", food ? "" : "+",
-                    "food", food ? "+" : "",
-                    "!", !ok && action.equals("eat") ? "+" : "", // attempt to eat non-food
-                    "*", ok && action.equals("eat") ? "+" : "")); // eating food
+                    "food", food ? "+" : ""));
             correctAction = food ? "eat" : "fwd";
             if (action.equals(correctAction)) {
                 correct++;

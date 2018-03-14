@@ -5,6 +5,8 @@ import bumblebee.v2.tests.AgentException;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Collections;
+
 public class World {
     public World() {
         // motivation values should be relative only:
@@ -14,14 +16,14 @@ public class World {
         // so walking with no results could still be slightly positive on each step.
 
         // avoid eating yucky
-        Bumblebee bumblebee = new Bumblebee(ImmutableSet.of("eat", "zdummy"), ImmutableMap.of("!", -1L));
+        Bumblebee bumblebee = new Bumblebee(ImmutableSet.of("eat", "zdummy"));
         String action = "";
         int eats = 0;
         final int STEPS = 100;
         for (int i = 0; i < STEPS; i++) {
             boolean eat = "eat".equals(action);
             if (eat) eats++;
-            action = bumblebee.next(ImmutableMap.of("!", eat ? "+" : ""));
+            action = bumblebee.next(eat?-1:0, Collections.emptyMap());
         }
         System.out.println(eats + " eats of " + STEPS + " steps");
         if (eats > STEPS * 0.3) throw new AgentException();

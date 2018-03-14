@@ -29,7 +29,7 @@ public class World {
             "left", this::commandLeft
     );
 
-    Bumblebee bumblebee = new Bumblebee(commands.keySet(), ImmutableMap.of("*", 1L));
+    Bumblebee bumblebee = new Bumblebee(commands.keySet());
 
     static class Dot {
         double x, y;
@@ -92,7 +92,7 @@ public class World {
         double normalizedRotation = Math.atan2(Math.sin(actor.rotation), Math.cos(actor.rotation));
         long eye = Math.round((angleFood - normalizedRotation) / VIEW_ANGLE);
         //System.out.println("eye="+eye);
-        commands.get(bumblebee.next(ImmutableMap.of(
+        commands.get(bumblebee.next(0,ImmutableMap.of(
                 "*", "",
                 "a", eye == -1 ? "+" : "",
                 "b", eye == 0 ? "+" : "",

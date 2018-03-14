@@ -22,7 +22,6 @@ public class Bumblebee {
     static final int FULL_DEPTH = 2;
 
     final List<String> commands;
-    final Map<String, Long> sensorMotivations;
     Set<String> possibleSensors = new HashSet<>();
 
     Map<String, Stats> commandStats;
@@ -49,23 +48,14 @@ public class Bumblebee {
         }
     }
 
-    public Bumblebee(Set<String> commands, Map<String, Long> sensorMotivations) {
+    public Bumblebee(Set<String> commands) {
         this.commands = new ArrayList<>(commands);
-        this.sensorMotivations = sensorMotivations;
 
         commandStats = commands.stream().collect(toMap(identity(), (c) -> new Stats()));
     }
 
-    Long totalMotivation(Set<String> sensors) {
-        return sensors.stream()
-                .map(sensorMotivations::get)
-                .filter(Objects::nonNull)
-                .mapToLong(Long::longValue)
-                .sum();
-    }
-
-    public String next(Map<String, String> sensors) {
-        return next(new LinkedHashSet<String>(sensors.entrySet().stream()
+    public String next(long reward, Map<String, String> sensors) {
+        return next(reward, new LinkedHashSet<String>(sensors.entrySet().stream()
                 .filter(e -> !e.getValue().equals(""))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet())), null);
@@ -226,9 +216,9 @@ public class Bumblebee {
 
     // a lot of sensors are effectively boolean values,
     // if that's not enough, an additional map of float or other values could be added later
-    public String next(LinkedHashSet<String> sensorsSet, String description) {
+    public String next(long reward, LinkedHashSet<String> sensorsSet, String description) {
         possibleSensors.addAll(sensorsSet);
-        long motivation = totalMotivation(sensorsSet);
+        long motivation = reward;
         if (lastCommand != null) {
             commandStats.get(lastCommand).addMotivation(motivation);
             FullState fullState = new FullState(lastSensors, lastCommand);

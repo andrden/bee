@@ -23,8 +23,7 @@ public class World {
         // Can put food or rock to hand (shift to the register).
         // Can eat from hand only.
         Bumblebee bumblebee = new Bumblebee(
-                ImmutableSet.of("left", "right"),
-                ImmutableMap.of("*", 5L, "!", -2L));
+                ImmutableSet.of("left", "right"));
         final int STEPS = 1000;
         String action = "";
         for (int i = 0; i < STEPS; i++) {
@@ -44,8 +43,9 @@ public class World {
                 if (pos == p) view.add("p" + p);
                 if (food == p) view.add("f" + p);
             }
-            if (bump) view.add("!");
-            if (eat) view.add("*"); // eating food
+            long reward = 0;
+            if (bump) reward=-2;
+            if (eat) reward=5; // eating food
 
             String description = i + " [";
             for (int p = 0; p < SIZE; p++) {
@@ -56,7 +56,7 @@ public class World {
             description += "] "+
                     (view.contains("!") ? "!" : " ") +
                     (view.contains("*") ? "*" : " ");
-            action = bumblebee.next(view, description);
+            action = bumblebee.next(reward, view, description);
         }
         System.out.println("bumpCount=" + bumpCount + " eatCount=" + eatCount);
         //if (eatFood <= eatNoFood) throw new AgentException();
