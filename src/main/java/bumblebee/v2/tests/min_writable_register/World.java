@@ -49,9 +49,9 @@ public class World {
             if ("food".equals(road)) view.add("food");
             if ("rock".equals(hand)) view.add("hand_rock");
             if ("food".equals(hand)) view.add("hand_food");
-            long reward=0;
-            if (!eatOk && action.equals("eat")) reward=-2; // attempt to eat non-food
-            if (eatOk && action.equals("eat")) reward=5; // eating food
+            long reward = 0;
+            if (!eatOk && action.equals("eat")) reward = -2; // attempt to eat non-food
+            if (eatOk && action.equals("eat")) reward = 5; // eating food
 
             String description = i + " road rock/food, Hand: " +
                     (view.contains("rock") ? "r" : " ") +
@@ -63,7 +63,7 @@ public class World {
             if (i == 998) {
                 System.nanoTime();
             }
-            action = bumblebee.next(reward,view, description);
+            action = bumblebee.next(reward, view, description);
         }
         System.out.println("roadFood=" + roadFood + " eatFood=" + eatFood
                 + " eatNoFood=" + eatNoFood + " of " + STEPS + " steps");
