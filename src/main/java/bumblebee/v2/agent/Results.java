@@ -11,4 +11,9 @@ class Results {
     void addResult(Set<String> sensors) {
         set.add(sensors);
     }
+
+    @Override
+    public String toString() {
+        return set.toString();
+    }
 }
