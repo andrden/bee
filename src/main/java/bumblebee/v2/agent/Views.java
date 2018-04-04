@@ -5,7 +5,7 @@ import com.google.common.collect.Multiset;
 
 import java.util.Set;
 
-class Results {
+class Views {
     Multiset<Set<String>> set = HashMultiset.create();
 
     void addResult(Set<String> sensors) {

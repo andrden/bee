@@ -3,7 +3,6 @@ package bumblebee.v2.agent;
 import com.google.common.collect.Iterables;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -19,18 +18,19 @@ import static java.util.stream.Collectors.toSet;
  */
 public class Bumblebee {
     final Random random = new Random(0);
-    static final int FULL_DEPTH = 2;
+    static final int FULL_DEPTH = 3;
 
     final List<String> commands;
     Set<String> possibleSensors = new HashSet<>();
 
     Map<String, Stats> commandStats;
     Map<FullState, Stats> fullStateStats = new HashMap<>();
-    Map<FullState, Results> fullStateResults = new HashMap<>();
+    Map<FullState, Views> fullStateResults = new HashMap<>();
     String lastCommand;
     Set<String> lastSensors;
 
     Expectations expectations;
+    StateExpectation expectation;
 
     static class Expectations {
         Map<String, Double> byCommand; // command->avg lifetime motivation, recomputed on each next()
@@ -48,6 +48,47 @@ public class Bumblebee {
         }
     }
 
+    static class StateExpectation {
+        int depth;
+        double likelihood;
+        Set<String> sensors;
+        Map<String, CommandExpectation> tree = new HashMap<>();
+
+        public StateExpectation(int depth, Set<String> sensors, int likelihood) {
+            this.depth = depth;
+            this.sensors = sensors;
+            this.likelihood = likelihood;
+        }
+
+        @Override
+        public String toString() {
+            return likelihood + " " + sensors;
+        }
+    }
+
+    static class CommandExpectation {
+        double reward = 0;
+        List<StateExpectation> tree = new ArrayList<>();
+
+        public CommandExpectation(double reward) {
+            this.reward = reward;
+        }
+    }
+
+    StateExpectation expandExpectation(StateExpectation expectation) {
+        if (expectation.depth >= FULL_DEPTH) return expectation;
+        for (String command : commands) {
+            FullState fullState = new FullState(expectation.sensors, command);
+            CommandExpectation ce = new CommandExpectation(fullStateExpected(fullState));
+            expectation.tree.put(command, ce);
+
+            Views views = generalizedStateResults(fullState);
+            views.set.forEachEntry((sensors, count) ->
+                    ce.tree.add(expandExpectation(new StateExpectation(expectation.depth + 1, sensors, count))));
+        }
+        return expectation;
+    }
+
     public Bumblebee(Set<String> commands) {
         this.commands = new ArrayList<>(commands);
 
@@ -61,15 +102,15 @@ public class Bumblebee {
                 .collect(Collectors.toSet())), null);
     }
 
-    double expectedFutureMotivation(Results results, String command, int depth) {
+    double expectedFutureMotivation(Views views, String command, int depth) {
         if (depth == 0) {
-            return fullStateExpected(results, command);
+            return fullStateExpected(views, command);
         }
 
-        int size = results.set.size();
+        int size = views.set.size();
         if (size < 1) return NaN;
-        return results.set.elementSet().stream()
-                .mapToDouble(sensors -> expectedFutureMotivation(sensors, command, depth) * results.set.count(sensors))
+        return views.set.elementSet().stream()
+                .mapToDouble(sensors -> expectedFutureMotivation(sensors, command, depth) * views.set.count(sensors))
                 .sum() / size;
     }
 
@@ -86,14 +127,14 @@ public class Bumblebee {
             System.nanoTime();
         }
         if (isNaN(immediateMotivation)) return NaN;
-        Results results = generalizedStateResults(fullState);
-        if (results == null) return Double.NaN;
+        Views views = generalizedStateResults(fullState);
+        if (views == null) return Double.NaN;
         if (immediateMotivation == 0 &&
-                results.set.elementSet().size() == 1 && results.set.elementSet().iterator().next().equals(sensorsSet)) {
+                views.set.elementSet().size() == 1 && views.set.elementSet().iterator().next().equals(sensorsSet)) {
 //            what if second step is garanteed to change nothing, like 'rtake' in state 'lhand_food'?
 //                    Then it's going to have the same future motivation as direct step 'leat'!
 
-            // command changes nothing, so let's say we don't know its results or purpose in this state
+            // command changes nothing, so let's say we don't know its views or purpose in this state
             return Double.NEGATIVE_INFINITY;
         }
 
@@ -102,21 +143,21 @@ public class Bumblebee {
                         ? fullStateExpected(new FullState(sensorsSet, c))
                         : expectedFutureMotivation(sensorsSet, c, depth - 1)));
         Map<String, Double> expectedAfterStep = commands.stream().collect(Collectors.toMap(identity(),
-                c -> expectedFutureMotivation(results, c, depth - 1)));
+                c -> expectedFutureMotivation(views, c, depth - 1)));
         expectedAfterStep = merge(expectations.byCommand, expectedAfterStep);
         boolean noChange = expectedAfterStep.entrySet().stream()
                 .allMatch(e -> Objects.equals(e.getValue(), expectedWithoutThisCmd.get(e.getKey())));
         if (immediateMotivation == 0 && noChange) {
             return Double.NEGATIVE_INFINITY; // compare if this command indeed produces any effect, otherwise it's useless
         }
-//      one step taken in prediction, we have results, now we need to check external motivation received at this step,
+//      one step taken in prediction, we have views, now we need to check external motivation received at this step,
 //      in addition to possible movivation on the next step
         return immediateMotivation + expectedAfterStep.values().stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
     }
 
-    Results generalizedStateResults(FullState fullState) {
-        Results results = fullStateResults.get(fullState);
-        if (results != null) return results;
+    Views generalizedStateResults(FullState fullState) {
+        Views views = fullStateResults.get(fullState);
+        if (views != null) return views;
         Map<String, Map<FullState, Boolean>> map = possibleSensors.stream().collect(toMap(identity(), s -> new HashMap<>()));
         for (FullState genState : fullState.generalizations()) {
             Map<String, Boolean> known = generalizedResults(genState);
@@ -134,15 +175,16 @@ public class Bumblebee {
         Map<String, Double> sensorExpectations = map.entrySet().stream()
                 .filter(entry -> !entry.getValue().isEmpty())
                 .collect(toMap(Map.Entry::getKey,
-                entry -> entry.getValue().values().stream().mapToDouble(bool -> bool ? 1 : 0).average().getAsDouble()));
-        results = new Results();
-        for(int i : IntStream.range(0,10).boxed().collect(toList())){
+                        entry -> entry.getValue().values().stream().mapToDouble(bool -> bool ? 1 : 0).average().getAsDouble()));
+        views = new Views();
+        for (int i : IntStream.range(0, 10).boxed().collect(toList())) {
             // not actually correct, but some approximation
-            results.addResult(possibleSensors.stream().filter(sensorExpectations::containsKey)
-                .filter(sensor -> sensorExpectations.get(sensor) > random.nextDouble())
-                .collect(toSet()));
-        };
-        return results;
+            views.addResult(possibleSensors.stream().filter(sensorExpectations::containsKey)
+                    .filter(sensor -> sensorExpectations.get(sensor) > random.nextDouble())
+                    .collect(toSet()));
+        }
+        ;
+        return views;
     }
 
     Map<String, Boolean> generalizedResults(FullState generalizedState) {
@@ -197,11 +239,11 @@ public class Bumblebee {
         return false;
     }
 
-    double fullStateExpected(Results results, String command) {
-        int size = results.set.size();
+    double fullStateExpected(Views views, String command) {
+        int size = views.set.size();
         if (size < 1) return NaN;
-        return results.set.elementSet().stream()
-                .mapToDouble(sensors -> fullStateExpected(new FullState(sensors, command)) * results.set.count(sensors))
+        return views.set.elementSet().stream()
+                .mapToDouble(sensors -> fullStateExpected(new FullState(sensors, command)) * views.set.count(sensors))
                 .sum() / size;
     }
 
@@ -223,12 +265,15 @@ public class Bumblebee {
             commandStats.get(lastCommand).addMotivation(motivation);
             FullState fullState = new FullState(lastSensors, lastCommand);
             fullStateStats.computeIfAbsent(fullState, fs -> new Stats()).addMotivation(motivation);
-            fullStateResults.computeIfAbsent(fullState, fs -> new Results()).addResult(sensorsSet);
+            fullStateResults.computeIfAbsent(fullState, fs -> new Views()).addResult(sensorsSet);
         }
 
         // next step, now recompute:
         expectations = new Expectations(commands.stream()
                 .collect(toMap(identity(), c -> commandStats.get(c).expected())));
+
+        expectation = expandExpectation(new StateExpectation(0, sensorsSet, 1));
+
         Map<String, Double> fullStateExpectedMotivations = commands.stream()
                 .collect(toMap(identity(), c -> fullStateExpected(new FullState(sensorsSet, c))));
         Map<String, Double> nextStepExpectedMotivations = commands.stream()
