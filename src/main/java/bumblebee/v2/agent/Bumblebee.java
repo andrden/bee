@@ -1,8 +1,10 @@
 package bumblebee.v2.agent;
 
 import com.google.common.collect.Iterables;
+import com.google.common.util.concurrent.AtomicDouble;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -52,7 +54,8 @@ public class Bumblebee {
         int depth;
         double likelihood;
         Set<String> sensors;
-        Map<String, CommandExpectation> tree = new HashMap<>();
+        Map<String, CommandExpectation> tree;
+        double cumulativeReward = 0;
 
         public StateExpectation(int depth, Set<String> sensors, int likelihood) {
             this.depth = depth;
@@ -69,23 +72,40 @@ public class Bumblebee {
     static class CommandExpectation {
         double reward = 0;
         List<StateExpectation> tree = new ArrayList<>();
+        double cumulativeReward = 0;
 
         public CommandExpectation(double reward) {
             this.reward = reward;
         }
+
+        public double getCumulativeReward() {
+            return cumulativeReward;
+        }
     }
 
     StateExpectation expandExpectation(StateExpectation expectation) {
-        if (expectation.depth >= FULL_DEPTH) return expectation;
+        if (expectation.depth >= FULL_DEPTH) {
+            return expectation;
+        }
+        expectation.tree = new HashMap<>();
         for (String command : commands) {
             FullState fullState = new FullState(expectation.sensors, command);
             CommandExpectation ce = new CommandExpectation(fullStateExpected(fullState));
             expectation.tree.put(command, ce);
 
             Views views = generalizedStateResults(fullState);
-            views.set.forEachEntry((sensors, count) ->
-                    ce.tree.add(expandExpectation(new StateExpectation(expectation.depth + 1, sensors, count))));
+            AtomicDouble sumLikelihood = new AtomicDouble();
+            AtomicDouble sumCumulativeReward = new AtomicDouble();
+            views.set.forEachEntry((sensors, count) -> {
+                StateExpectation e = expandExpectation(new StateExpectation(expectation.depth + 1, sensors, count));
+                sumLikelihood.addAndGet(count);
+                sumCumulativeReward.addAndGet(e.cumulativeReward * count);
+                ce.tree.add(e);
+            });
+            ce.cumulativeReward = ce.reward + sumCumulativeReward.get() / sumLikelihood.get();
         }
+        expectation.cumulativeReward = expectation.tree.values().stream().mapToDouble(CommandExpectation::getCumulativeReward)
+                .max().orElse(Double.NaN);
         return expectation;
     }
 
@@ -274,13 +294,19 @@ public class Bumblebee {
 
         expectation = expandExpectation(new StateExpectation(0, sensorsSet, 1));
 
-        Map<String, Double> fullStateExpectedMotivations = commands.stream()
-                .collect(toMap(identity(), c -> fullStateExpected(new FullState(sensorsSet, c))));
-        Map<String, Double> nextStepExpectedMotivations = commands.stream()
-                .collect(toMap(identity(), c -> expectedFutureMotivation(sensorsSet, c, FULL_DEPTH)));
-        Map<String, Double> maxThisAndNextStep = finalMerge(expectations.byCommand,
-                merge(fullStateExpectedMotivations, nextStepExpectedMotivations));
-        maxThisAndNextStep = nanToAverage(maxThisAndNextStep);
+//        Map<String, Double> fullStateExpectedMotivations = commands.stream()
+//                .collect(toMap(identity(), c -> fullStateExpected(new FullState(sensorsSet, c))));
+//        Map<String, Double> nextStepExpectedMotivations = commands.stream()
+//                .collect(toMap(identity(), c -> expectedFutureMotivation(sensorsSet, c, FULL_DEPTH)));
+//        Map<String, Double> maxThisAndNextStep = finalMerge(expectations.byCommand,
+//                merge(fullStateExpectedMotivations, nextStepExpectedMotivations));
+//        maxThisAndNextStep = nanToAverage(maxThisAndNextStep);
+
+        Map<String, Double> maxThisAndNextSteps = expectation.tree.entrySet().stream()
+                .collect(toMap(Map.Entry::getKey, e -> e.getValue().cumulativeReward));
+        if (maxThisAndNextSteps.values().stream().mapToDouble(Double::doubleValue).allMatch(Double::isNaN)) {
+            maxThisAndNextSteps = null;
+        }
 
 //        f       ∑=0 cmd=eat expected={take=1.0, fwd=1.0, eat=0.8123324770521143} 1step={take=243.00000000000017, fwd=1.0, eat=NaN}
 //        -must have resulted in "take", because it 's so much promising...
@@ -288,8 +314,9 @@ public class Bumblebee {
 //        if (nextStepExpectedMotivations.values().stream().anyMatch(v -> v > 1)) {
 //            System.nanoTime();
 //        }
-        if (maxThisAndNextStep != null) {
-            weighted(maxThisAndNextStep);
+        boolean explorativeCommand = false;
+        if (maxThisAndNextSteps != null) {
+            explorativeCommand = !weighted(maxThisAndNextSteps);
 //        } else if (!expectedMotivations.values().contains(Double.NaN)) {
 //            weighted(expectedMotivations);
         } else {
@@ -297,8 +324,8 @@ public class Bumblebee {
             lastCommand = commands.get(random.nextInt(commands.size()));
         }
         System.out.println(ofNullable(description).orElseGet(sensorsSet::toString)
-                + " ∑=" + motivation + " cmd=" + lastCommand
-                + " 1step=" + maxThisAndNextStep
+                + " ∑=" + motivation + " cmd" + (explorativeCommand ? "~" : "=") + lastCommand
+                + " steps=" + maxThisAndNextSteps
                 + " byCmd=" + expectations.byCommand
         );
         lastSensors = sensorsSet;
@@ -323,7 +350,9 @@ public class Bumblebee {
                         : e.getValue()));
     }
 
-    private void weighted(Map<String, Double> expectedMotivations) {
+    private boolean weighted(Map<String, Double> expectedMotivations) {
+        double max = expectedMotivations.values().stream()
+                .mapToDouble(Double::doubleValue).max().getAsDouble();
         double sum = expectedMotivations.values().stream()
                 .mapToDouble(v -> Math.exp(Const.MOTIVATION_UNIT_SCALE * v)).sum();
         double rnd = random.nextDouble() * sum;
@@ -334,5 +363,6 @@ public class Bumblebee {
                 break;
             }
         }
+        return (expectedMotivations.get(lastCommand).equals(max));
     }
 }
