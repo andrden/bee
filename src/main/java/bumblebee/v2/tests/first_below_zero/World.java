@@ -26,6 +26,7 @@ public class World {
             action = bumblebee.next(eat?-1:0, Collections.emptyMap());
         }
         System.out.println(eats + " eats of " + STEPS + " steps");
+        if (eats < 3) throw new AgentException();
         if (eats > STEPS * 0.3) throw new AgentException();
     }
 }

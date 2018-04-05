@@ -83,7 +83,7 @@ public class Bumblebee {
         }
     }
 
-    StateExpectation expandExpectation(StateExpectation expectation) {
+    private StateExpectation expandExpectation(StateExpectation expectation) {
         if (expectation.depth >= FULL_DEPTH) {
             return expectation;
         }
@@ -96,13 +96,19 @@ public class Bumblebee {
             Views views = generalizedStateResults(fullState);
             AtomicDouble sumLikelihood = new AtomicDouble();
             AtomicDouble sumCumulativeReward = new AtomicDouble();
+            boolean noChange = ce.reward == 0 && views.set.elementSet().size() == 1 &&
+                    Iterables.getOnlyElement(views.set.elementSet()).equals(expectation.sensors);
             views.set.forEachEntry((sensors, count) -> {
-                StateExpectation e = expandExpectation(new StateExpectation(expectation.depth + 1, sensors, count));
-                sumLikelihood.addAndGet(count);
-                sumCumulativeReward.addAndGet(e.cumulativeReward * count);
+                StateExpectation e = new StateExpectation(expectation.depth + 1, sensors, count);
+                if (!noChange) {
+                    e = expandExpectation(e);
+                    sumLikelihood.addAndGet(count);
+                    sumCumulativeReward.addAndGet(e.cumulativeReward * count);
+                }
                 ce.tree.add(e);
             });
-            ce.cumulativeReward = ce.reward + sumCumulativeReward.get() / sumLikelihood.get();
+            ce.cumulativeReward = ce.reward +
+                    (sumLikelihood.get() == 0 ? 0 : sumCumulativeReward.get() / sumLikelihood.get());
         }
         expectation.cumulativeReward = expectation.tree.values().stream().mapToDouble(CommandExpectation::getCumulativeReward)
                 .max().orElse(Double.NaN);
@@ -122,7 +128,7 @@ public class Bumblebee {
                 .collect(Collectors.toSet())), null);
     }
 
-    double expectedFutureMotivation(Views views, String command, int depth) {
+    private double expectedFutureMotivation(Views views, String command, int depth) {
         if (depth == 0) {
             return fullStateExpected(views, command);
         }
@@ -134,13 +140,13 @@ public class Bumblebee {
                 .sum() / size;
     }
 
-    Double expectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
+    private Double expectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
         FullState key = new FullState(sensorsSet, command);
         return expectations.depth(depth).computeIfAbsent(key,
                 k -> computeExpectedFutureMotivation(sensorsSet, command, depth));
     }
 
-    double computeExpectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
+    private double computeExpectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
         FullState fullState = new FullState(sensorsSet, command);
         double immediateMotivation = fullStateExpected(fullState);
         if (command.equals("rtake") && depth == 2) {
@@ -175,7 +181,7 @@ public class Bumblebee {
         return immediateMotivation + expectedAfterStep.values().stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
     }
 
-    Views generalizedStateResults(FullState fullState) {
+    private Views generalizedStateResults(FullState fullState) {
         Views views = fullStateResults.get(fullState);
         if (views != null) return views;
         Map<String, Map<FullState, Boolean>> map = possibleSensors.stream().collect(toMap(identity(), s -> new HashMap<>()));
@@ -207,7 +213,7 @@ public class Bumblebee {
         return views;
     }
 
-    Map<String, Boolean> generalizedResults(FullState generalizedState) {
+    private Map<String, Boolean> generalizedResults(FullState generalizedState) {
         Map<String, Boolean> known = new HashMap<>();
         for (String sensor : possibleSensors) {
             Set<Boolean> filtered = fullStateResults.entrySet().stream()
@@ -222,12 +228,12 @@ public class Bumblebee {
         return known;
     }
 
-    double fullStateExpected(FullState fullState) {
+    private double fullStateExpected(FullState fullState) {
         //need to cache fullStateExpected for each depth when processing each next()
         return expectations.depth(0).computeIfAbsent(fullState, this::computeFullStateExpected);
     }
 
-    double computeFullStateExpected(FullState fullState) {
+    private double computeFullStateExpected(FullState fullState) {
         Stats stats = fullStateStats.get(fullState);
         if (stats != null) return stats.expected();
         Map<FullState, Double> map = new HashMap<>();
@@ -248,18 +254,18 @@ public class Bumblebee {
         return Double.NaN;
     }
 
-    <T> void cleanUpWithGeneralization(FullState newState, T newStats, Map<FullState, T> map) {
+    private <T> void cleanUpWithGeneralization(FullState newState, T newStats, Map<FullState, T> map) {
         map.keySet().removeIf(s -> newState.isGeneralizationOf(s) && newStats == map.get(s));
     }
 
-    <T> boolean containsGeneralization(FullState newState, T newStats, Map<FullState, T> map) {
+    private <T> boolean containsGeneralization(FullState newState, T newStats, Map<FullState, T> map) {
         for (FullState s : map.keySet()) {
             if (s.isGeneralizationOf(newState) && map.get(s).equals(newStats)) return true;
         }
         return false;
     }
 
-    double fullStateExpected(Views views, String command) {
+    private double fullStateExpected(Views views, String command) {
         int size = views.set.size();
         if (size < 1) return NaN;
         return views.set.elementSet().stream()
@@ -267,7 +273,7 @@ public class Bumblebee {
                 .sum() / size;
     }
 
-    double generalizedStats(FullState generalizedState) {
+    private double generalizedStats(FullState generalizedState) {
         Set<Double> set = fullStateStats.entrySet().stream()
                 .filter(entry -> generalizedState.isGeneralizationOf(entry.getKey()))
                 .map(Map.Entry::getValue)
@@ -306,6 +312,8 @@ public class Bumblebee {
                 .collect(toMap(Map.Entry::getKey, e -> e.getValue().cumulativeReward));
         if (maxThisAndNextSteps.values().stream().mapToDouble(Double::doubleValue).allMatch(Double::isNaN)) {
             maxThisAndNextSteps = null;
+        } else {
+            maxThisAndNextSteps = nanToAverage(maxThisAndNextSteps);
         }
 
 //        f       ∑=0 cmd=eat expected={take=1.0, fwd=1.0, eat=0.8123324770521143} 1step={take=243.00000000000017, fwd=1.0, eat=NaN}
@@ -338,7 +346,7 @@ public class Bumblebee {
         return rewards.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> isNaN(e.getValue()) ? avg.getAsDouble() : e.getValue()));
     }
 
-    Map<String, Double> merge(Map<String, Double> fallback, Map<String, Double> priority) {
+    private Map<String, Double> merge(Map<String, Double> fallback, Map<String, Double> priority) {
         return priority.entrySet().stream().collect(toMap(Map.Entry::getKey,
                 e -> isNaN(e.getValue()) ? fallback.get(e.getKey()) : e.getValue()));
     }

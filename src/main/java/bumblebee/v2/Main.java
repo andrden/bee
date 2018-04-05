@@ -7,9 +7,14 @@ public class Main {
 //        dataExtract.extract("<div class='big blue'> <span class='sdk'><a href='http://bb2.com'>frog</a>  </span>\n</div>");
 
         try {
-     //       new bumblebee.v2.tests.min_adapt_incentive.World();
-            //new bumblebee.v2.tests.first_below_zero.World();
-//            new bumblebee.v2.tests.min_sensor_initiative.World();
+            need config file to run failed test only until it passes, then run all tests from the beginning
+
+                    /tmp/bumblebee-test/[[[full.class.name.to.run]]]
+
+
+            new bumblebee.v2.tests.min_adapt_incentive.World();
+            new bumblebee.v2.tests.first_below_zero.World();
+            new bumblebee.v2.tests.min_sensor_initiative.World();
             new bumblebee.v2.tests.min_writable_register.World();
 //            new bumblebee.v2.tests.false_sensors.World();
 //            new bumblebee.v2.tests.false_sensors_register.World();
