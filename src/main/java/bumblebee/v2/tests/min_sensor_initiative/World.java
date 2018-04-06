@@ -20,7 +20,7 @@ public class World {
         int correct = 0;
         int foodProvided = 0;
         int foodEaten = 0;
-        final int STEPS = 100;
+        final int STEPS = 200;
         for (int i = 0; i < STEPS; i++) {
             boolean ok = action.equals(correctAction);
             boolean food = random.nextDouble() < 0.2; // food is not everywhere
@@ -30,7 +30,7 @@ public class World {
 //            }
 
             long reward=0;
-            if(!ok && action.equals("eat")) reward=-1; // attempt to eat non-food
+            if(!ok && action.equals("eat")) reward=-2; // attempt to eat non-food
             if(ok && action.equals("eat")) reward=5; // eating food
             action = bumblebee.next(reward, ImmutableMap.of(
                     "rock", food ? "" : "+",
