@@ -110,8 +110,11 @@ public class Bumblebee {
             ce.cumulativeReward = ce.reward +
                     (sumLikelihood.get() == 0 ? 0 : sumCumulativeReward.get() / sumLikelihood.get());
         }
-        expectation.cumulativeReward = expectation.tree.values().stream().mapToDouble(CommandExpectation::getCumulativeReward)
-                .max().orElse(Double.NaN);
+        expectation.cumulativeReward = expectation.tree.values().stream()
+                .mapToDouble(CommandExpectation::getCumulativeReward)
+                .filter(cumulativeReward -> !Double.isNaN(cumulativeReward)) // skip unknown when calculating maximum
+                .max()
+                .orElse(Double.NaN);
         return expectation;
     }
 
