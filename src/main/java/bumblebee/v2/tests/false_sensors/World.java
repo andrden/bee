@@ -33,14 +33,14 @@ public class World {
             if ((i & 1) == 0) sensors.add("a");
             sensors.add(food ? "food" : "rock");
             if ((i & 2) == 0) sensors.add("b");
+            if ((i & 4) == 0) sensors.add("c");
+            if ((i & 8) == 0) sensors.add("d");
             long reward=0;
             if (!ok && action.equals("eat")) reward=-1; // attempt to eat non-food
             if (ok && action.equals("eat")) { // eating food
                 foodEaten++;
                 reward=5;
             }
-            if ((i & 4) == 0) sensors.add("c");
-            if ((i & 8) == 0) sensors.add("d");
             if (i == 95) {
                 System.nanoTime();
             }

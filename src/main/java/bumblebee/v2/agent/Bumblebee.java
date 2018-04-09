@@ -96,7 +96,7 @@ public class Bumblebee {
             Views views = generalizedStateResults(fullState);
             AtomicDouble sumLikelihood = new AtomicDouble();
             AtomicDouble sumCumulativeReward = new AtomicDouble();
-            boolean noChange = ce.reward == 0 && views.set.elementSet().size() == 1 &&
+            boolean noChange = ce.reward <= 0 && views.set.elementSet().size() == 1 &&
                     Iterables.getOnlyElement(views.set.elementSet()).equals(expectation.sensors);
             views.set.forEachEntry((sensors, count) -> {
                 StateExpectation e = new StateExpectation(expectation.depth + 1, sensors, count);
@@ -128,58 +128,58 @@ public class Bumblebee {
                 .collect(Collectors.toSet())), null);
     }
 
-    private double expectedFutureMotivation(Views views, String command, int depth) {
-        if (depth == 0) {
-            return fullStateExpected(views, command);
-        }
+//    private double expectedFutureMotivation(Views views, String command, int depth) {
+//        if (depth == 0) {
+//            return fullStateExpected(views, command);
+//        }
+//
+//        int size = views.set.size();
+//        if (size < 1) return NaN;
+//        return views.set.elementSet().stream()
+//                .mapToDouble(sensors -> expectedFutureMotivation(sensors, command, depth) * views.set.count(sensors))
+//                .sum() / size;
+//    }
 
-        int size = views.set.size();
-        if (size < 1) return NaN;
-        return views.set.elementSet().stream()
-                .mapToDouble(sensors -> expectedFutureMotivation(sensors, command, depth) * views.set.count(sensors))
-                .sum() / size;
-    }
+//    private Double expectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
+//        FullState key = new FullState(sensorsSet, command);
+//        return expectations.depth(depth).computeIfAbsent(key,
+//                k -> computeExpectedFutureMotivation(sensorsSet, command, depth));
+//    }
 
-    private Double expectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
-        FullState key = new FullState(sensorsSet, command);
-        return expectations.depth(depth).computeIfAbsent(key,
-                k -> computeExpectedFutureMotivation(sensorsSet, command, depth));
-    }
-
-    private double computeExpectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
-        FullState fullState = new FullState(sensorsSet, command);
-        double immediateMotivation = fullStateExpected(fullState);
-        if (command.equals("rtake") && depth == 2) {
-            System.nanoTime();
-        }
-        if (isNaN(immediateMotivation)) return NaN;
-        Views views = generalizedStateResults(fullState);
-        if (views == null) return Double.NaN;
-        if (immediateMotivation == 0 &&
-                views.set.elementSet().size() == 1 && views.set.elementSet().iterator().next().equals(sensorsSet)) {
-//            what if second step is garanteed to change nothing, like 'rtake' in state 'lhand_food'?
-//                    Then it's going to have the same future motivation as direct step 'leat'!
-
-            // command changes nothing, so let's say we don't know its views or purpose in this state
-            return Double.NEGATIVE_INFINITY;
-        }
-
-        Map<String, Double> expectedWithoutThisCmd = commands.stream().collect(Collectors.toMap(identity(),
-                c -> depth == 1
-                        ? fullStateExpected(new FullState(sensorsSet, c))
-                        : expectedFutureMotivation(sensorsSet, c, depth - 1)));
-        Map<String, Double> expectedAfterStep = commands.stream().collect(Collectors.toMap(identity(),
-                c -> expectedFutureMotivation(views, c, depth - 1)));
-        expectedAfterStep = merge(expectations.byCommand, expectedAfterStep);
-        boolean noChange = expectedAfterStep.entrySet().stream()
-                .allMatch(e -> Objects.equals(e.getValue(), expectedWithoutThisCmd.get(e.getKey())));
-        if (immediateMotivation == 0 && noChange) {
-            return Double.NEGATIVE_INFINITY; // compare if this command indeed produces any effect, otherwise it's useless
-        }
-//      one step taken in prediction, we have views, now we need to check external motivation received at this step,
-//      in addition to possible movivation on the next step
-        return immediateMotivation + expectedAfterStep.values().stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
-    }
+//    private double computeExpectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
+//        FullState fullState = new FullState(sensorsSet, command);
+//        double immediateMotivation = fullStateExpected(fullState);
+//        if (command.equals("rtake") && depth == 2) {
+//            System.nanoTime();
+//        }
+//        if (isNaN(immediateMotivation)) return NaN;
+//        Views views = generalizedStateResults(fullState);
+//        if (views == null) return Double.NaN;
+//        if (immediateMotivation == 0 &&
+//                views.set.elementSet().size() == 1 && views.set.elementSet().iterator().next().equals(sensorsSet)) {
+////            what if second step is garanteed to change nothing, like 'rtake' in state 'lhand_food'?
+////                    Then it's going to have the same future motivation as direct step 'leat'!
+//
+//            // command changes nothing, so let's say we don't know its views or purpose in this state
+//            return Double.NEGATIVE_INFINITY;
+//        }
+//
+//        Map<String, Double> expectedWithoutThisCmd = commands.stream().collect(Collectors.toMap(identity(),
+//                c -> depth == 1
+//                        ? fullStateExpected(new FullState(sensorsSet, c))
+//                        : expectedFutureMotivation(sensorsSet, c, depth - 1)));
+//        Map<String, Double> expectedAfterStep = commands.stream().collect(Collectors.toMap(identity(),
+//                c -> expectedFutureMotivation(views, c, depth - 1)));
+//        expectedAfterStep = merge(expectations.byCommand, expectedAfterStep);
+//        boolean noChange = expectedAfterStep.entrySet().stream()
+//                .allMatch(e -> Objects.equals(e.getValue(), expectedWithoutThisCmd.get(e.getKey())));
+//        if (immediateMotivation == 0 && noChange) {
+//            return Double.NEGATIVE_INFINITY; // compare if this command indeed produces any effect, otherwise it's useless
+//        }
+////      one step taken in prediction, we have views, now we need to check external motivation received at this step,
+////      in addition to possible movivation on the next step
+//        return immediateMotivation + expectedAfterStep.values().stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
+//    }
 
     private Views generalizedStateResults(FullState fullState) {
         Views views = fullStateResults.get(fullState);
