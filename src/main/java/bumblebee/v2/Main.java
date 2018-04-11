@@ -9,7 +9,17 @@ import java.util.function.Consumer;
 public class Main {
     static final File MARKER = new File("/tmp/bumblebee-test/failed");
 
+    static void mathSimplify(String math){
+        // the problem is to simplify without doing exponentially many searches thru the tree of possible transformations
+        // because even 4*x*z can be changed to 2*2*z*x or x*z*4 or z*x*4*1 or innumerable other possibilities
+        // and even if we limit the possibilities to those not producing overly complex intermediate result
+        // (A*-search by minimal complexity first), we still have exponentially enormous number of expressions to consider.
+        // How to prune this tree?
+    }
+
     public static void main(String[] args) throws Exception {
+        mathSimplify("((exp(x)+exp(-x))/2)^2 - ((exp(x)-exp(-x))/2)^2 + 1 + 4*y^2 + 2x - 4y + x^2 + 1");
+
         DataExtractAgent dataExtract = new DataExtractAgent();
 //        dataExtract.extractLearn("<div class='big blue'> <span class='sdk'><a href='http://bb.com'>[[[dog]]]</a>  </span>\n</div>");
 //        dataExtract.extract("<div class='big blue'> <span class='sdk'><a href='http://bb2.com'>frog</a>  </span>\n</div>");

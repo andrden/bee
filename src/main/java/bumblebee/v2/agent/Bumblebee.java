@@ -4,11 +4,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.AtomicDouble;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
 import static java.util.Optional.ofNullable;
 import static java.util.function.Function.identity;
@@ -36,16 +34,16 @@ public class Bumblebee {
 
     static class Expectations {
         Map<String, Double> byCommand; // command->avg lifetime motivation, recomputed on each next()
-        List<Map<FullState, Double>> byDepth;
+        List<Map<FullState, Map<FullState, Double>>> byDepth;
 
         public Expectations(Map<String, Double> byCommand) {
             this.byCommand = byCommand;
             byDepth = IntStream.range(0, FULL_DEPTH + 1)
-                    .mapToObj(i -> new HashMap<FullState, Double>())
+                    .mapToObj(i -> new HashMap<FullState, Map<FullState, Double>>())
                     .collect(Collectors.toList());
         }
 
-        Map<FullState, Double> depth(int i) {
+        Map<FullState, Map<FullState, Double>> depth(int i) {
             return byDepth.get(i);
         }
     }
@@ -71,16 +69,32 @@ public class Bumblebee {
 
     static class CommandExpectation {
         double reward = 0;
+        Map<FullState,Double> rewardPrediction;
         List<StateExpectation> tree = new ArrayList<>();
         double cumulativeReward = 0;
 
-        public CommandExpectation(double reward) {
-            this.reward = reward;
+        public CommandExpectation(Map<FullState,Double> rewardPrediction) {
+            this.rewardPrediction = rewardPrediction;
+            this.reward = rewardValue(rewardPrediction);
         }
 
         public double getCumulativeReward() {
             return cumulativeReward;
         }
+    }
+
+    static double rewardValue(Map<FullState,Double> rewardPrediction){
+        if (!rewardPrediction.isEmpty()) {
+            double avg = rewardPrediction.values().stream().mapToDouble(Double::doubleValue).average().getAsDouble();
+//            if (avg == 5) {
+//                System.nanoTime();
+//                need to track why we expect a reward
+//                // e.g. map: "reat [rhand_food]" -> "5.0" while fullState may be
+//                // "reat [lhand_food, rhand_food]" or "reat [lrock, rhand_food]" or "reat [lrock, rfood, rhand_food]"
+//            }
+            return avg;
+        }
+        return Double.NaN;
     }
 
     private StateExpectation expandExpectation(StateExpectation expectation) {
@@ -231,14 +245,15 @@ public class Bumblebee {
         return known;
     }
 
-    private double fullStateExpected(FullState fullState) {
+    private Map<FullState, Double> fullStateExpected(FullState fullState) {
         //need to cache fullStateExpected for each depth when processing each next()
-        return expectations.depth(0).computeIfAbsent(fullState, this::computeFullStateExpected);
+        Map<FullState, Map<FullState, Double>> depth = expectations.depth(0);
+        return depth.computeIfAbsent(fullState, this::computeFullStateExpected);
     }
 
-    private double computeFullStateExpected(FullState fullState) {
-        Stats stats = fullStateStats.get(fullState);
-        if (stats != null) return stats.expected();
+    private Map<FullState, Double> computeFullStateExpected(FullState fullState) {
+//        Stats stats = fullStateStats.get(fullState);
+//        if (stats != null) return stats.expected();
         Map<FullState, Double> map = new HashMap<>();
         for (FullState genState : fullState.generalizations()) {
             double genStats = generalizedStats(genState);
@@ -249,12 +264,18 @@ public class Bumblebee {
                 }
             }
         }
-        if (!map.isEmpty()) {
-            //System.nanoTime();
-            double avg = map.values().stream().mapToDouble(Double::doubleValue).average().getAsDouble();
-            return avg;
-        }
-        return Double.NaN;
+        return map;
+//        if (!map.isEmpty()) {
+//            double avg = map.values().stream().mapToDouble(Double::doubleValue).average().getAsDouble();
+//            if (avg == 5) {
+//                System.nanoTime();
+//                need to track why we expect a reward
+//                // e.g. map: "reat [rhand_food]" -> "5.0" while fullState may be
+//                // "reat [lhand_food, rhand_food]" or "reat [lrock, rhand_food]" or "reat [lrock, rfood, rhand_food]"
+//            }
+//            return avg;
+//        }
+//        return Double.NaN;
     }
 
     private <T> void cleanUpWithGeneralization(FullState newState, T newStats, Map<FullState, T> map) {
@@ -268,13 +289,13 @@ public class Bumblebee {
         return false;
     }
 
-    private double fullStateExpected(Views views, String command) {
-        int size = views.set.size();
-        if (size < 1) return NaN;
-        return views.set.elementSet().stream()
-                .mapToDouble(sensors -> fullStateExpected(new FullState(sensors, command)) * views.set.count(sensors))
-                .sum() / size;
-    }
+//    private double fullStateExpected(Views views, String command) {
+//        int size = views.set.size();
+//        if (size < 1) return NaN;
+//        return views.set.elementSet().stream()
+//                .mapToDouble(sensors -> fullStateExpected(new FullState(sensors, command)) * views.set.count(sensors))
+//                .sum() / size;
+//    }
 
     private double generalizedStats(FullState generalizedState) {
         Set<Double> set = fullStateStats.entrySet().stream()
