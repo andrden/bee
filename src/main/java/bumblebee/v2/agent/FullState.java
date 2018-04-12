@@ -47,4 +47,8 @@ class FullState {
                         command)
         ).collect(Collectors.toList());
     }
+
+    public Set<String> getSensors() {
+        return sensors;
+    }
 }

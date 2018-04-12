@@ -1,6 +1,7 @@
 package bumblebee.v2.agent;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AtomicDouble;
 
 import java.util.*;
@@ -52,11 +53,15 @@ public class Bumblebee {
         int depth;
         double likelihood;
         Set<String> sensors;
+        Set<String> changedSensors;
         Map<String, CommandExpectation> tree;
         double cumulativeReward = 0;
 
-        public StateExpectation(int depth, Set<String> sensors, int likelihood) {
-            this.depth = depth;
+        public StateExpectation(StateExpectation parent, Set<String> sensors, int likelihood) {
+            this.depth = parent == null ? 0 : parent.depth + 1;
+            if (parent != null) {
+                changedSensors = Sets.symmetricDifference(sensors, parent.sensors);
+            }
             this.sensors = sensors;
             this.likelihood = likelihood;
         }
@@ -69,11 +74,11 @@ public class Bumblebee {
 
     static class CommandExpectation {
         double reward = 0;
-        Map<FullState,Double> rewardPrediction;
+        Map<FullState, Double> rewardPrediction;
         List<StateExpectation> tree = new ArrayList<>();
         double cumulativeReward = 0;
 
-        public CommandExpectation(Map<FullState,Double> rewardPrediction) {
+        public CommandExpectation(Map<FullState, Double> rewardPrediction) {
             this.rewardPrediction = rewardPrediction;
             this.reward = rewardValue(rewardPrediction);
         }
@@ -83,7 +88,7 @@ public class Bumblebee {
         }
     }
 
-    static double rewardValue(Map<FullState,Double> rewardPrediction){
+    static double rewardValue(Map<FullState, Double> rewardPrediction) {
         if (!rewardPrediction.isEmpty()) {
             double avg = rewardPrediction.values().stream().mapToDouble(Double::doubleValue).average().getAsDouble();
 //            if (avg == 5) {
@@ -113,7 +118,7 @@ public class Bumblebee {
             boolean noChange = ce.reward <= 0 && views.set.elementSet().size() == 1 &&
                     Iterables.getOnlyElement(views.set.elementSet()).equals(expectation.sensors);
             views.set.forEachEntry((sensors, count) -> {
-                StateExpectation e = new StateExpectation(expectation.depth + 1, sensors, count);
+                StateExpectation e = new StateExpectation(expectation, sensors, count);
                 if (!noChange) {
                     e = expandExpectation(e);
                     sumLikelihood.addAndGet(count);
@@ -125,11 +130,22 @@ public class Bumblebee {
                     (sumLikelihood.get() == 0 ? 0 : sumCumulativeReward.get() / sumLikelihood.get());
         }
         expectation.cumulativeReward = expectation.tree.values().stream()
+                .filter(command -> causedBy(command, expectation.changedSensors))
                 .mapToDouble(CommandExpectation::getCumulativeReward)
                 .filter(cumulativeReward -> !Double.isNaN(cumulativeReward)) // skip unknown when calculating maximum
                 .max()
                 .orElse(Double.NaN);
         return expectation;
+    }
+
+    boolean causedBy(CommandExpectation commandExpectation, Set<String> changedSensors) {
+        // the task is to NOT give credit to previous command if it didn't change something needed to get the reward
+        if (commandExpectation.reward <= 0) return true; // no big deal, not much of a credit anyway
+        if (Double.isNaN(commandExpectation.reward)) return true;
+        if (changedSensors == null) return true; // depth=0, not a deep chain of commands
+        Set<String> cause = commandExpectation.rewardPrediction.keySet().stream()
+                .map(FullState::getSensors).flatMap(Set::stream).collect(toSet());
+        return !Sets.intersection(cause, changedSensors).isEmpty();
     }
 
     public Bumblebee(Set<String> commands) {
@@ -322,7 +338,7 @@ public class Bumblebee {
         expectations = new Expectations(commands.stream()
                 .collect(toMap(identity(), c -> commandStats.get(c).expected())));
 
-        expectation = expandExpectation(new StateExpectation(0, sensorsSet, 1));
+        expectation = expandExpectation(new StateExpectation(null, sensorsSet, 1));
 
 //        Map<String, Double> fullStateExpectedMotivations = commands.stream()
 //                .collect(toMap(identity(), c -> fullStateExpected(new FullState(sensorsSet, c))));
