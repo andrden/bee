@@ -216,6 +216,10 @@ public class Bumblebee {
 
     private Views generalizedStateResults(FullState fullState) {
         Views views = fullStateResults.get(fullState);
+        this is fast, but for 2-registers world,
+                "lfwd [rrock]" => "[[lrock, rrock] x 7]" is false inference even though we 7 times had this combination,
+            but we also had 10+ occurences of lfood after lfwd and actually lfwd is the only provider of lfood
+                so should we skip this fast-check altogether? or skip it 50% or time?
         if (views != null) return views;
         Map<String, Map<FullState, Boolean>> map = possibleSensors.stream().collect(toMap(identity(), s -> new HashMap<>()));
         for (FullState genState : fullState.generalizations()) {
