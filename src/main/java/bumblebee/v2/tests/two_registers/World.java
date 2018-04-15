@@ -91,7 +91,7 @@ public class World {
                     (view.contains("rhand_food") ? "F" : " ") + " " +
                     (view.contains("!") ? "!" : " ") +
                     (view.contains("*") ? "*" : " ");
-            if (i == 736) {
+            if (i == 784) {
                 System.nanoTime(); // rtake = leat is ridiculous
 
 //996 road rock/food, Hand:     F |         ∑=0 cmd=leat

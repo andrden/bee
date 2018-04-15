@@ -1,6 +1,8 @@
 package bumblebee.v2.agent;
 
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AtomicDouble;
 
@@ -85,6 +87,11 @@ public class Bumblebee {
 
         public double getCumulativeReward() {
             return cumulativeReward;
+        }
+
+        @Override
+        public String toString() {
+            return reward + ", cumul=" + cumulativeReward + " " + rewardPrediction;
         }
     }
 
@@ -215,12 +222,13 @@ public class Bumblebee {
 //    }
 
     private Views generalizedStateResults(FullState fullState) {
-        Views views = fullStateResults.get(fullState);
-        this is fast, but for 2-registers world,
-                "lfwd [rrock]" => "[[lrock, rrock] x 7]" is false inference even though we 7 times had this combination,
-            but we also had 10+ occurences of lfood after lfwd and actually lfwd is the only provider of lfood
-                so should we skip this fast-check altogether? or skip it 50% or time?
-        if (views != null) return views;
+        // there is not such notion as full state anymore, can't ever track all sensors
+        Views views = null;//fullStateResults.get(fullState);
+//        this is fast, but for 2-registers world,
+//                "lfwd [rrock]" => "[[lrock, rrock] x 7]" is false inference even though we 7 times had this combination,
+//            but we also had 10+ occurences of lfood after lfwd and actually lfwd is the only provider of lfood
+//                so should we skip this fast-check altogether? or skip it 50% or time?
+//        if (views != null) return views;
         Map<String, Map<FullState, Boolean>> map = possibleSensors.stream().collect(toMap(identity(), s -> new HashMap<>()));
         for (FullState genState : fullState.generalizations()) {
             Map<String, Boolean> known = generalizedResults(genState);
@@ -274,9 +282,14 @@ public class Bumblebee {
     private Map<FullState, Double> computeFullStateExpected(FullState fullState) {
 //        Stats stats = fullStateStats.get(fullState);
 //        if (stats != null) return stats.expected();
+        Map<FullState, Multiset<Double>> known = new HashMap<>();
         Map<FullState, Double> map = new HashMap<>();
         for (FullState genState : fullState.generalizations()) {
-            double genStats = generalizedStats(genState);
+            Multiset<Double> multiset = generalizedStats(genState);
+            known.put(genState, multiset);
+            Set<Double> set = multiset.elementSet();
+            double genStats = set.size() == 1 ? set.iterator().next() : Double.NaN;
+
             if (!isNaN(genStats)) {
                 if (!containsGeneralization(genState, genStats, map)) {
                     cleanUpWithGeneralization(genState, genStats, map);
@@ -317,13 +330,13 @@ public class Bumblebee {
 //                .sum() / size;
 //    }
 
-    private double generalizedStats(FullState generalizedState) {
-        Set<Double> set = fullStateStats.entrySet().stream()
+    private HashMultiset<Double> generalizedStats(FullState generalizedState) {
+        HashMultiset<Double> multiset = fullStateStats.entrySet().stream()
                 .filter(entry -> generalizedState.isGeneralizationOf(entry.getKey()))
                 .map(Map.Entry::getValue)
                 .map(Stats::expected)
-                .collect(Collectors.toSet());
-        return set.size() == 1 ? set.iterator().next() : Double.NaN;
+                .collect(Collectors.toCollection(HashMultiset::create));
+        return multiset;
     }
 
     // a lot of sensors are effectively boolean values,
