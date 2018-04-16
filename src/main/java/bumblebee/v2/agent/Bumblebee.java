@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.lang.Double.isNaN;
+import static java.lang.Double.longBitsToDouble;
+import static java.util.Collections.singletonList;
 import static java.util.Optional.ofNullable;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
@@ -336,6 +338,35 @@ public class Bumblebee {
                 .map(Map.Entry::getValue)
                 .map(Stats::expected)
                 .collect(Collectors.toCollection(HashMultiset::create));
+        if (multiset.elementSet().size() == 2) {
+            // doing some privitive data mining staff
+            for (double val : new HashSet<>(multiset.elementSet())) {
+                List<FullState> group = fullStateStats.entrySet().stream()
+                        .filter(entry -> generalizedState.isGeneralizationOf(entry.getKey()))
+                        .filter(entry -> entry.getValue().expected() == val)
+                        .map(Map.Entry::getKey)
+                        .collect(toList());
+                Set<String> common = new HashSet<>(group.get(0).sensors);
+                for (FullState fs : group) {
+                    common.retainAll(fs.sensors);
+                }
+                if (common.size() > 0) {
+//                    investing in learning the environment, fundamental science is the most profitable thing in the long run
+//                            so should we only compute likelihoods here or actively check them?
+                    if(fullStateStats.entrySet().stream()
+                            .filter(entry -> generalizedState.isGeneralizationOf(entry.getKey()))
+                            .filter(entry -> !Sets.intersection(entry.getKey().sensors, common).isEmpty())
+                            .allMatch(entry -> entry.getValue().expected() == val)){
+                        // 'val' is explained by 'common'
+                        if(generalizedState.sensors.containsAll(common)){
+                            return HashMultiset.create(singletonList(val));
+                        }else{
+                            multiset.elementSet().remove(val);
+                        }
+                    }
+                }
+            }
+        }
         return multiset;
     }
 
