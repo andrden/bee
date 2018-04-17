@@ -1,0 +1,16 @@
+apply plugin: 'java'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile 'com.google.guava:guava:23.6-jre'
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.1.0")
+    testRuntime("org.junit.jupiter:junit-jupiter-engine:5.1.0")
+}
+
+test {
+    useJUnitPlatform()
+}
