@@ -46,9 +46,25 @@ class TestPredictor {
         assertSingle("0", p.predict(Set.of("rock", "fwd")));
     }
 
+    @Test
+    void test4() {
+        Predictor<String> p = new Predictor<>();
+        p.add(Set.of("rock", "hand_food", "fwd"), "rock", 20);
+        p.add(Set.of("rock", "fwd"), "food", 4);
+        p.add(Set.of("food", "fwd"), "rock", 20);
+        p.add(Set.of("food", "fwd"), "food", 4);
+
+        assertContains("food", p.predict(Set.of("rock", "hand_rock", "fwd")));
+    }
+
+    void assertContains(String v, List<Prediction<String>> plist) {
+        assertTrue(plist.stream().anyMatch(p -> p.getValue().equals(v) && p.getLikelihood() > 0),
+                "not found: " + v + " in " + plist);
+    }
+
     void assertSingle(String v, List<Prediction<String>> p) {
-        assertEquals(1, p.size(), p::toString);
-        assertTrue(p.get(0).likelihood > 0, p::toString);
-        assertEquals(v, p.get(0).value, p::toString);
+        assertEquals(1, p.size(), () -> "not single, prediction=" + p.toString());
+        assertTrue(p.get(0).likelihood > 0, () -> "prediction=" + p.toString());
+        assertEquals(v, p.get(0).value, () -> "prediction=" + p.toString());
     }
 }

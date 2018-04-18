@@ -9,6 +9,10 @@ public class Prediction<T> {
     double likelihood;
     Set<String> basedOn;
 
+    public Prediction(Multiset.Entry<T> entry, Set<String> basedOn) {
+        this(entry.getElement(), entry.getCount(), basedOn);
+    }
+
     public Prediction(T value, double likelihood, Set<String> basedOn) {
         this.value = value;
         this.likelihood = likelihood;
