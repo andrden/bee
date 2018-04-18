@@ -4,10 +4,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Predictor<T> {
@@ -21,12 +18,14 @@ public class Predictor<T> {
         this.history = history;
     }
 
-    public void add(Set<String> state, T result){
+    public void add(Set<String> state, T result) {
         history.computeIfAbsent(state, s -> HashMultiset.create()).add(result);
     }
 
     public List<Prediction<T>> predict(Set<String> state) {
-        return history.get(state).entrySet().stream()
-                .map(Prediction::new).collect(Collectors.toList());
+        Multiset<T> multiset = history.get(state);
+        if (multiset == null) return Collections.emptyList();
+        return multiset.entrySet().stream()
+                .map(entry -> new Prediction<T>(entry.getElement(), entry.getCount(), state)).collect(Collectors.toList());
     }
 }

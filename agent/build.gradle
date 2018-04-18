@@ -6,5 +6,6 @@ repositories {
 
 dependencies {
     compile 'com.google.guava:guava:23.6-jre'
+    compile project(":prediction")
 }
 

@@ -5,13 +5,14 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AtomicDouble;
+import predict.Prediction;
+import predict.Predictor;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.lang.Double.isNaN;
-import static java.lang.Double.longBitsToDouble;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.ofNullable;
 import static java.util.function.Function.identity;
@@ -29,26 +30,27 @@ public class Bumblebee {
     Set<String> possibleSensors = new HashSet<>();
 
     Map<String, Stats> commandStats;
+    Predictor<Long> rewardPredictor = new Predictor<>();
     Map<FullState, Stats> fullStateStats = new HashMap<>();
     Map<FullState, Views> fullStateResults = new HashMap<>();
     String lastCommand;
     Set<String> lastSensors;
 
-    Expectations expectations;
+    Expectations expectationsCache;
     StateExpectation expectation;
 
     static class Expectations {
         Map<String, Double> byCommand; // command->avg lifetime motivation, recomputed on each next()
-        List<Map<FullState, Map<FullState, Double>>> byDepth;
+        List<Map<FullState, List<Prediction<Long>>>> byDepth;
 
         public Expectations(Map<String, Double> byCommand) {
             this.byCommand = byCommand;
             byDepth = IntStream.range(0, FULL_DEPTH + 1)
-                    .mapToObj(i -> new HashMap<FullState, Map<FullState, Double>>())
+                    .mapToObj(i -> new HashMap<FullState, List<Prediction<Long>>>())
                     .collect(Collectors.toList());
         }
 
-        Map<FullState, Map<FullState, Double>> depth(int i) {
+        Map<FullState, List<Prediction<Long>>> depth(int i) {
             return byDepth.get(i);
         }
     }
@@ -78,11 +80,11 @@ public class Bumblebee {
 
     static class CommandExpectation {
         double reward = 0;
-        Map<FullState, Double> rewardPrediction;
+        List<Prediction<Long>> rewardPrediction;
         List<StateExpectation> tree = new ArrayList<>();
         double cumulativeReward = 0;
 
-        public CommandExpectation(Map<FullState, Double> rewardPrediction) {
+        public CommandExpectation(List<Prediction<Long>> rewardPrediction) {
             this.rewardPrediction = rewardPrediction;
             this.reward = rewardValue(rewardPrediction);
         }
@@ -97,16 +99,23 @@ public class Bumblebee {
         }
     }
 
-    static double rewardValue(Map<FullState, Double> rewardPrediction) {
+    static double rewardValue(List<Prediction<Long>> rewardPrediction) {
         if (!rewardPrediction.isEmpty()) {
-            double avg = rewardPrediction.values().stream().mapToDouble(Double::doubleValue).average().getAsDouble();
+            double sum = 0, sumw = 0;
+            for (var p : rewardPrediction) {
+                sum += p.getLikelihood() * p.getValue();
+                sumw += p.getLikelihood();
+            }
+            return sum / sumw;
+
+            //double avg = rewardPrediction.stream().mapToDouble(Double::doubleValue).average().getAsDouble();
 //            if (avg == 5) {
 //                System.nanoTime();
 //                need to track why we expect a reward
 //                // e.g. map: "reat [rhand_food]" -> "5.0" while fullState may be
 //                // "reat [lhand_food, rhand_food]" or "reat [lrock, rhand_food]" or "reat [lrock, rfood, rhand_food]"
 //            }
-            return avg;
+            //return avg;
         }
         return Double.NaN;
     }
@@ -152,8 +161,11 @@ public class Bumblebee {
         if (commandExpectation.reward <= 0) return true; // no big deal, not much of a credit anyway
         if (Double.isNaN(commandExpectation.reward)) return true;
         if (changedSensors == null) return true; // depth=0, not a deep chain of commands
-        Set<String> cause = commandExpectation.rewardPrediction.keySet().stream()
-                .map(FullState::getSensors).flatMap(Set::stream).collect(toSet());
+//        Set<String> cause = commandExpectation.rewardPrediction.keySet().stream()
+//                .map(FullState::getSensors).flatMap(Set::stream).collect(toSet());
+        Set<String> cause = commandExpectation.rewardPrediction.stream()
+                .map(Prediction::getBasedOn)
+                .flatMap(Set::stream).collect(toSet());
         return !Sets.intersection(cause, changedSensors).isEmpty();
     }
 
@@ -184,7 +196,7 @@ public class Bumblebee {
 
 //    private Double expectedFutureMotivation(Set<String> sensorsSet, String command, int depth) {
 //        FullState key = new FullState(sensorsSet, command);
-//        return expectations.depth(depth).computeIfAbsent(key,
+//        return expectationsCache.depth(depth).computeIfAbsent(key,
 //                k -> computeExpectedFutureMotivation(sensorsSet, command, depth));
 //    }
 
@@ -212,7 +224,7 @@ public class Bumblebee {
 //                        : expectedFutureMotivation(sensorsSet, c, depth - 1)));
 //        Map<String, Double> expectedAfterStep = commands.stream().collect(Collectors.toMap(identity(),
 //                c -> expectedFutureMotivation(views, c, depth - 1)));
-//        expectedAfterStep = merge(expectations.byCommand, expectedAfterStep);
+//        expectedAfterStep = merge(expectationsCache.byCommand, expectedAfterStep);
 //        boolean noChange = expectedAfterStep.entrySet().stream()
 //                .allMatch(e -> Objects.equals(e.getValue(), expectedWithoutThisCmd.get(e.getKey())));
 //        if (immediateMotivation == 0 && noChange) {
@@ -275,10 +287,11 @@ public class Bumblebee {
         return known;
     }
 
-    private Map<FullState, Double> fullStateExpected(FullState fullState) {
+    private List<Prediction<Long>> fullStateExpected(FullState fullState) {
         //need to cache fullStateExpected for each depth when processing each next()
-        Map<FullState, Map<FullState, Double>> depth = expectations.depth(0);
-        return depth.computeIfAbsent(fullState, this::computeFullStateExpected);
+        Map<FullState, List<Prediction<Long>>> depth = expectationsCache.depth(0);
+        //return depth.computeIfAbsent(fullState, this::computeFullStateExpected);
+        return depth.computeIfAbsent(fullState, fs -> rewardPredictor.predict(fs.getAll()));
     }
 
     private Map<FullState, Double> computeFullStateExpected(FullState fullState) {
@@ -353,14 +366,14 @@ public class Bumblebee {
                 if (common.size() > 0) {
 //                    investing in learning the environment, fundamental science is the most profitable thing in the long run
 //                            so should we only compute likelihoods here or actively check them?
-                    if(fullStateStats.entrySet().stream()
+                    if (fullStateStats.entrySet().stream()
                             .filter(entry -> generalizedState.isGeneralizationOf(entry.getKey()))
                             .filter(entry -> !Sets.intersection(entry.getKey().sensors, common).isEmpty())
-                            .allMatch(entry -> entry.getValue().expected() == val)){
+                            .allMatch(entry -> entry.getValue().expected() == val)) {
                         // 'val' is explained by 'common'
-                        if(generalizedState.sensors.containsAll(common)){
+                        if (generalizedState.sensors.containsAll(common)) {
                             return HashMultiset.create(singletonList(val));
-                        }else{
+                        } else {
                             multiset.elementSet().remove(val);
                         }
                     }
@@ -374,16 +387,16 @@ public class Bumblebee {
     // if that's not enough, an additional map of float or other values could be added later
     public String next(long reward, LinkedHashSet<String> sensorsSet, String description) {
         possibleSensors.addAll(sensorsSet);
-        long motivation = reward;
         if (lastCommand != null) {
-            commandStats.get(lastCommand).addMotivation(motivation);
+            commandStats.get(lastCommand).addMotivation(reward);
             FullState fullState = new FullState(lastSensors, lastCommand);
-            fullStateStats.computeIfAbsent(fullState, fs -> new Stats()).addMotivation(motivation);
+            rewardPredictor.add(fullState.getAll(), reward);
+            fullStateStats.computeIfAbsent(fullState, fs -> new Stats()).addMotivation(reward);
             fullStateResults.computeIfAbsent(fullState, fs -> new Views()).addResult(sensorsSet);
         }
 
         // next step, now recompute:
-        expectations = new Expectations(commands.stream()
+        expectationsCache = new Expectations(commands.stream()
                 .collect(toMap(identity(), c -> commandStats.get(c).expected())));
 
         expectation = expandExpectation(new StateExpectation(null, sensorsSet, 1));
@@ -392,7 +405,7 @@ public class Bumblebee {
 //                .collect(toMap(identity(), c -> fullStateExpected(new FullState(sensorsSet, c))));
 //        Map<String, Double> nextStepExpectedMotivations = commands.stream()
 //                .collect(toMap(identity(), c -> expectedFutureMotivation(sensorsSet, c, FULL_DEPTH)));
-//        Map<String, Double> maxThisAndNextStep = finalMerge(expectations.byCommand,
+//        Map<String, Double> maxThisAndNextStep = finalMerge(expectationsCache.byCommand,
 //                merge(fullStateExpectedMotivations, nextStepExpectedMotivations));
 //        maxThisAndNextStep = nanToAverage(maxThisAndNextStep);
 
@@ -420,9 +433,9 @@ public class Bumblebee {
             lastCommand = commands.get(random.nextInt(commands.size()));
         }
         System.out.println(ofNullable(description).orElseGet(sensorsSet::toString)
-                + " ∑=" + motivation + " cmd" + (explorativeCommand ? "~" : "=") + lastCommand
+                + " ∑=" + reward + " cmd" + (explorativeCommand ? "~" : "=") + lastCommand
                 + " steps=" + maxThisAndNextSteps
-                + " byCmd=" + expectations.byCommand
+                + " byCmd=" + expectationsCache.byCommand
         );
         lastSensors = sensorsSet;
         return lastCommand;

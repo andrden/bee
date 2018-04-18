@@ -1,9 +1,6 @@
 package bumblebee.v2.agent;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -50,5 +47,12 @@ class FullState {
 
     public Set<String> getSensors() {
         return sensors;
+    }
+
+    public Set<String> getAll() {
+        var s = new LinkedHashSet<String>();
+        s.add(command);
+        s.addAll(sensors);
+        return s;
     }
 }
