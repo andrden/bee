@@ -145,7 +145,9 @@ public class Bumblebee {
                 ce.tree.add(e);
             });
             ce.cumulativeReward = ce.reward +
-                    (sumLikelihood.get() == 0 ? 0 : sumCumulativeReward.get() / sumLikelihood.get());
+                    (sumLikelihood.get() == 0 || isNaN(sumCumulativeReward.get())
+                            ? 0
+                            : sumCumulativeReward.get() / sumLikelihood.get());
         }
         expectation.cumulativeReward = expectation.tree.values().stream()
                 .filter(command -> causedBy(command, expectation.changedSensors))
@@ -433,7 +435,7 @@ public class Bumblebee {
             lastCommand = commands.get(random.nextInt(commands.size()));
         }
         System.out.println(ofNullable(description).orElseGet(sensorsSet::toString)
-                + " ∑=" + reward + " cmd" + (explorativeCommand ? "~" : "=") + lastCommand
+                + " ∑=" + reward + " cmd" + (explorativeCommand ? ">" : "=") + lastCommand
                 + " steps=" + maxThisAndNextSteps
                 + " byCmd=" + expectationsCache.byCommand
         );

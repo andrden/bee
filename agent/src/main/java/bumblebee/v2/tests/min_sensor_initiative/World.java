@@ -5,6 +5,7 @@ import bumblebee.v2.tests.AgentException;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.LinkedHashSet;
 import java.util.Random;
 
 public class World {
@@ -29,12 +30,15 @@ public class World {
 //                System.nanoTime();
 //            }
 
-            long reward=0;
-            if(!ok && action.equals("eat")) reward=-2; // attempt to eat non-food
-            if(ok && action.equals("eat")) reward=5; // eating food
-            action = bumblebee.next(reward, ImmutableMap.of(
-                    "rock", food ? "" : "+",
-                    "food", food ? "+" : ""));
+            long reward = 0;
+            if (!ok && action.equals("eat")) reward = -2; // attempt to eat non-food
+            if (ok && action.equals("eat")) reward = 5; // eating food
+            var s = new LinkedHashSet<String>();
+            s.add(food ? "food" : "rock");
+            if (i == 190) {
+                System.nanoTime();
+            }
+            action = bumblebee.next(reward, s, i + " " + s);
             correctAction = food ? "eat" : "fwd";
             if (action.equals(correctAction)) {
                 correct++;

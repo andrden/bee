@@ -25,7 +25,8 @@ public class Predictor<T> {
     public List<Prediction<T>> predict(Set<String> state) {
         Multiset<T> multiset = history.get(state);
         if (multiset == null) return Collections.emptyList();
-        return multiset.entrySet().stream()
+        List<Prediction<T>> result = multiset.entrySet().stream()
                 .map(entry -> new Prediction<T>(entry.getElement(), entry.getCount(), state)).collect(Collectors.toList());
+        return result;
     }
 }
