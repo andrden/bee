@@ -28,9 +28,12 @@ public class Bumblebee {
 
     final List<String> commands;
     Set<String> possibleSensors = new HashSet<>();
+    int step = 0;
+    List<FullState> fullHistory = new ArrayList<>();
 
     Map<String, Stats> commandStats;
     Predictor<Long> rewardPredictor = new Predictor<>();
+    Map<String, Predictor<Boolean>> resultPredictors = new HashMap<>();
     Map<FullState, Stats> fullStateStats = new HashMap<>();
     Map<FullState, Views> fullStateResults = new HashMap<>();
     String lastCommand;
@@ -245,29 +248,36 @@ public class Bumblebee {
 //            but we also had 10+ occurences of lfood after lfwd and actually lfwd is the only provider of lfood
 //                so should we skip this fast-check altogether? or skip it 50% or time?
 //        if (views != null) return views;
-        Map<String, Map<FullState, Boolean>> map = possibleSensors.stream().collect(toMap(identity(), s -> new HashMap<>()));
-        for (FullState genState : fullState.generalizations()) {
-            Map<String, Boolean> known = generalizedResults(genState);
-            for (String sensor : possibleSensors) {
-                Boolean genStats = known.get(sensor);
-                if (genStats != null) {
-                    Map<FullState, Boolean> submap = map.get(sensor);
-                    if (!containsGeneralization(genState, genStats, submap)) {
-                        cleanUpWithGeneralization(genState, genStats, submap);
-                        submap.put(genState, genStats);
-                    }
-                }
-            }
-        }
-        Map<String, Double> sensorExpectations = map.entrySet().stream()
-                .filter(entry -> !entry.getValue().isEmpty())
-                .collect(toMap(Map.Entry::getKey,
-                        entry -> entry.getValue().values().stream().mapToDouble(bool -> bool ? 1 : 0).average().getAsDouble()));
+        Map<String, List<Prediction<Boolean>>> sensorPredictions = possibleSensors.stream()
+                .collect(toMap(identity(), s -> getResultPredictor(s).predict(fullState.getAll())));
+        Map<String, Double> probabilities = possibleSensors.stream()
+                .collect(toMap(identity(), s -> Prediction.probability(sensorPredictions.get(s))));
+//        Map<String, Map<FullState, Boolean>> map = possibleSensors.stream().collect(toMap(identity(), s -> new HashMap<>()));
+//        for (FullState genState : fullState.generalizations()) {
+//            Map<String, Boolean> known = generalizedResults(genState);
+//            for (String sensor : possibleSensors) {
+//                Boolean genStats = known.get(sensor);
+//                if (genStats != null) {
+//                    Map<FullState, Boolean> submap = map.get(sensor);
+//                    if (!containsGeneralization(genState, genStats, submap)) {
+//                        cleanUpWithGeneralization(genState, genStats, submap);
+//                        submap.put(genState, genStats);
+//                    }
+//                }
+//            }
+//        }
+//        Map<String, Double> sensorExpectations = map.entrySet().stream()
+//                .filter(entry -> !entry.getValue().isEmpty())
+//                .collect(toMap(Map.Entry::getKey,
+//                        entry -> entry.getValue().values().stream().mapToDouble(bool -> bool ? 1 : 0).average().getAsDouble()));
         views = new Views();
-        for (int i : IntStream.range(0, 10).boxed().collect(toList())) {
+        for (int i : IntStream.range(0, 20).boxed().collect(toList())) {
             // not actually correct, but some approximation
-            views.addResult(possibleSensors.stream().filter(sensorExpectations::containsKey)
-                    .filter(sensor -> sensorExpectations.get(sensor) > random.nextDouble())
+//            views.addResult(possibleSensors.stream().filter(sensorExpectations::containsKey)
+//                    .filter(sensor -> sensorExpectations.get(sensor) > random.nextDouble())
+//                    .collect(toSet()));
+            views.addResult(possibleSensors.stream()
+                    .filter(sensor -> probabilities.get(sensor) > random.nextDouble())
                     .collect(toSet()));
         }
         ;
@@ -385,16 +395,28 @@ public class Bumblebee {
         return multiset;
     }
 
+    Predictor<Boolean> getResultPredictor(String sensor) {
+        return resultPredictors.computeIfAbsent(sensor, s -> {
+            var p = new Predictor<Boolean>();
+            // there were no signals from this sensor before:
+            fullHistory.forEach(fullState -> p.add(fullState.getAll(), false));
+            return p;
+        });
+    }
+
     // a lot of sensors are effectively boolean values,
     // if that's not enough, an additional map of float or other values could be added later
     public String next(long reward, LinkedHashSet<String> sensorsSet, String description) {
         possibleSensors.addAll(sensorsSet);
+        step++;
         if (lastCommand != null) {
             commandStats.get(lastCommand).addMotivation(reward);
             FullState fullState = new FullState(lastSensors, lastCommand);
             rewardPredictor.add(fullState.getAll(), reward);
+            possibleSensors.forEach(s -> getResultPredictor(s).add(fullState.getAll(), sensorsSet.contains(s)));
             fullStateStats.computeIfAbsent(fullState, fs -> new Stats()).addMotivation(reward);
             fullStateResults.computeIfAbsent(fullState, fs -> new Views()).addResult(sensorsSet);
+            fullHistory.add(fullState);
         }
 
         // next step, now recompute:

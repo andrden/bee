@@ -2,6 +2,7 @@ package predict;
 
 import com.google.common.collect.Multiset;
 
+import java.util.List;
 import java.util.Set;
 
 public class Prediction<T> {
@@ -34,5 +35,10 @@ public class Prediction<T> {
 
     public Set<String> getBasedOn() {
         return basedOn;
+    }
+
+    public static double probability(List<Prediction<Boolean>> list) {
+        if (list.isEmpty()) return 0.5;
+        return list.stream().mapToDouble(p -> p.getValue() ? 1 : 0).average().getAsDouble();
     }
 }
