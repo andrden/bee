@@ -284,20 +284,20 @@ public class Bumblebee {
         return views;
     }
 
-    private Map<String, Boolean> generalizedResults(FullState generalizedState) {
-        Map<String, Boolean> known = new HashMap<>();
-        for (String sensor : possibleSensors) {
-            Set<Boolean> filtered = fullStateResults.entrySet().stream()
-                    .filter(entry -> generalizedState.isGeneralizationOf(entry.getKey()))
-                    .flatMap(entry -> entry.getValue().set.elementSet().stream())
-                    .map(sensors -> sensors.contains(sensor))
-                    .collect(toSet());
-            if (filtered.size() == 1) {
-                known.put(sensor, Iterables.getOnlyElement(filtered));
-            }
-        }
-        return known;
-    }
+//    private Map<String, Boolean> generalizedResults(FullState generalizedState) {
+//        Map<String, Boolean> known = new HashMap<>();
+//        for (String sensor : possibleSensors) {
+//            Set<Boolean> filtered = fullStateResults.entrySet().stream()
+//                    .filter(entry -> generalizedState.isGeneralizationOf(entry.getKey()))
+//                    .flatMap(entry -> entry.getValue().set.elementSet().stream())
+//                    .map(sensors -> sensors.contains(sensor))
+//                    .collect(toSet());
+//            if (filtered.size() == 1) {
+//                known.put(sensor, Iterables.getOnlyElement(filtered));
+//            }
+//        }
+//        return known;
+//    }
 
     private List<Prediction<Long>> fullStateExpected(FullState fullState) {
         //need to cache fullStateExpected for each depth when processing each next()
@@ -459,7 +459,7 @@ public class Bumblebee {
         System.out.println(ofNullable(description).orElseGet(sensorsSet::toString)
                 + " ∑=" + reward + " cmd" + (explorativeCommand ? ">" : "=") + lastCommand
                 + " steps=" + maxThisAndNextSteps
-                + " byCmd=" + expectationsCache.byCommand
+               // + " byCmd=" + expectationsCache.byCommand
         );
         lastSensors = sensorsSet;
         return lastCommand;

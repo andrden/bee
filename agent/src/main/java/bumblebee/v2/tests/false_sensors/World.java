@@ -24,7 +24,7 @@ public class World {
         int correct = 0;
         int foodGiven = 0;
         int foodEaten = 0;
-        final int STEPS = 100;
+        final int STEPS = 120;
         for (int i = 0; i < STEPS; i++) {
             boolean ok = action.equals(correctAction);
             boolean food = random.nextDouble() < 0.2; // food is not everywhere
@@ -41,7 +41,7 @@ public class World {
                 foodEaten++;
                 reward=5;
             }
-            if (i == 93) {
+            if (i == 92) {
                 System.nanoTime();
             }
             action = bumblebee.next(reward, sensors, i + " " + sensors);
