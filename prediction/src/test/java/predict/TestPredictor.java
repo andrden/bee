@@ -77,7 +77,7 @@ class TestPredictor {
 
         List<Prediction<String>> predictions = p.predict(Set.of("ltake", "lrock", "rfood"));
         //there must be no 'false' in prediction
-        assertSingle("true", predictions);
+        assertSingle("true", predictions); // or maybe only check for 'true' likelihood  > 'false' likelihood
 
         /*
         History scan is as follows:

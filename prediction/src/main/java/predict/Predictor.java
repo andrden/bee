@@ -68,6 +68,11 @@ public class Predictor<T> {
             if (map.isEmpty()) {
                 return Collections.emptyList();
             }
+            int minCases = map.values().stream().mapToInt(mset -> mset.entrySet().size()).min().getAsInt();
+            if (minCases == 1) {
+                // there are predictions with definite result, remove all others as noise
+                map.entrySet().removeIf(entry -> entry.getValue().entrySet().size() > minCases);
+            }
             Set<String> superSet = map.keySet().stream().flatMap(Set::stream).collect(Collectors.toSet());
             Multiset<T> summary = map.values().stream().reduce(HashMultiset.create(), Predictor::add);
             return summary.entrySet().stream()
