@@ -9,27 +9,44 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Predictor<T> {
+    private final String name;
     Map<Set<String>, Multiset<T>> history;
+    Map<Set<String>, Multiset<T>> historySubsets = new HashMap<>();
 
     public Predictor() {
         history = new HashMap<>();
+        name = null;
     }
 
-    public Predictor(Map<Set<String>, Multiset<T>> history) {
-        this.history = history;
+    public Predictor(String name) {
+        history = new HashMap<>();
+        this.name = name;
     }
+
+    //    public Predictor(Map<Set<String>, Multiset<T>> history) {
+//        this.history = history;
+//    }
 
     public void add(Set<String> state, T result) {
-        history.computeIfAbsent(state, s -> HashMultiset.create()).add(result);
+        //history.computeIfAbsent(state, s -> HashMultiset.create()).add(result);
+        add(state, result, 1);
     }
 
     public void add(Set<String> state, T result, int occurences) {
         history.computeIfAbsent(state, s -> HashMultiset.create()).add(result, occurences);
+        addHistorySubsets(state, result, occurences);
+    }
+
+    void addHistorySubsets(Set<String> state, T result, int occurences) {
+        Sets.powerSet(state).stream().filter(sub -> sub.size() > 0)
+                .forEach(sub -> historySubsets.computeIfAbsent(sub, s -> HashMultiset.create())
+                        .add(result, occurences));
     }
 
     Multiset<T> historyScan(Set<String> subState) {
-        return history.entrySet().stream().filter(e -> e.getKey().containsAll(subState))
-                .map(Map.Entry::getValue).reduce(HashMultiset.create(), Predictor::add);
+        return historySubsets.get(subState);
+//        return history.entrySet().stream().filter(e -> e.getKey().containsAll(subState))
+//                .map(Map.Entry::getValue).reduce(HashMultiset.create(), Predictor::add);
     }
 
     static <T> Multiset<T> add(Multiset<T> a, Multiset<T> b) {
@@ -44,7 +61,7 @@ public class Predictor<T> {
             Sets.powerSet(state).stream().filter(sub -> sub.size() > 0)
                     .forEach(sub -> {
                         Multiset<T> value = historyScan(sub);
-                        if (!value.isEmpty()) {
+                        if (value != null && !value.isEmpty()) {
                             map.put(sub, value);
                         }
                     });

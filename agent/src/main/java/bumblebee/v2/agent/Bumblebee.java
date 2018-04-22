@@ -16,9 +16,7 @@ import static java.lang.Double.isNaN;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.ofNullable;
 import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.*;
 
 /**
  */
@@ -397,7 +395,7 @@ public class Bumblebee {
 
     Predictor<Boolean> getResultPredictor(String sensor) {
         return resultPredictors.computeIfAbsent(sensor, s -> {
-            var p = new Predictor<Boolean>();
+            var p = new Predictor<Boolean>(sensor);
             // there were no signals from this sensor before:
             fullHistory.forEach(fullState -> p.add(fullState.getAll(), false));
             return p;
@@ -407,6 +405,7 @@ public class Bumblebee {
     // a lot of sensors are effectively boolean values,
     // if that's not enough, an additional map of float or other values could be added later
     public String next(long reward, LinkedHashSet<String> sensorsSet, String description) {
+        final long t0 = System.currentTimeMillis();
         possibleSensors.addAll(sensorsSet);
         step++;
         if (lastCommand != null) {
@@ -457,9 +456,10 @@ public class Bumblebee {
             lastCommand = commands.get(random.nextInt(commands.size()));
         }
         System.out.println(ofNullable(description).orElseGet(sensorsSet::toString)
-                + " ∑=" + reward + " cmd" + (explorativeCommand ? ">" : "=") + lastCommand
-                + " steps=" + maxThisAndNextSteps
-               // + " byCmd=" + expectationsCache.byCommand
+                        + " ∑=" + reward + " cmd" + (explorativeCommand ? ">" : "=") + lastCommand
+                        + " steps=" + print(maxThisAndNextSteps)
+                        + " " + (System.currentTimeMillis() - t0) + "ms"
+                // + " byCmd=" + expectationsCache.byCommand
         );
         lastSensors = sensorsSet;
         return lastCommand;
@@ -471,17 +471,24 @@ public class Bumblebee {
         return rewards.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> isNaN(e.getValue()) ? avg.getAsDouble() : e.getValue()));
     }
 
-    private Map<String, Double> merge(Map<String, Double> fallback, Map<String, Double> priority) {
-        return priority.entrySet().stream().collect(toMap(Map.Entry::getKey,
-                e -> isNaN(e.getValue()) ? fallback.get(e.getKey()) : e.getValue()));
+    String print(Map<String, Double> map) {
+        if (map == null) return "" + map;
+        return map.entrySet().stream()
+                .map(e -> e.getKey() + "=" + String.format("%.2f", e.getValue()))
+                .collect(joining(", ", "[", "]"));
     }
 
-    Map<String, Double> finalMerge(Map<String, Double> fallback, Map<String, Double> priority) {
-        return priority.entrySet().stream().collect(toMap(Map.Entry::getKey,
-                e -> isNaN(e.getValue()) || e.getValue() == Double.NEGATIVE_INFINITY
-                        ? fallback.get(e.getKey())
-                        : e.getValue()));
-    }
+//    private Map<String, Double> merge(Map<String, Double> fallback, Map<String, Double> priority) {
+//        return priority.entrySet().stream().collect(toMap(Map.Entry::getKey,
+//                e -> isNaN(e.getValue()) ? fallback.get(e.getKey()) : e.getValue()));
+//    }
+//
+//    Map<String, Double> finalMerge(Map<String, Double> fallback, Map<String, Double> priority) {
+//        return priority.entrySet().stream().collect(toMap(Map.Entry::getKey,
+//                e -> isNaN(e.getValue()) || e.getValue() == Double.NEGATIVE_INFINITY
+//                        ? fallback.get(e.getKey())
+//                        : e.getValue()));
+//    }
 
     private boolean weighted(Map<String, Double> expectedMotivations) {
         double max = expectedMotivations.values().stream()
