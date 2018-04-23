@@ -41,7 +41,7 @@ public class World {
                 foodEaten++;
                 reward=5;
             }
-            if (i == 92) {
+            if (i == 116) {
                 System.nanoTime();
             }
             action = bumblebee.next(reward, sensors, i + " " + sensors);

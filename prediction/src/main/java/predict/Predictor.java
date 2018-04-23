@@ -56,7 +56,7 @@ public class Predictor<T> {
 
     public List<Prediction<T>> predict(Set<String> state) {
         Multiset<T> multiset = history.get(state);
-        if (multiset == null) {
+        if (multiset == null || multiset.size() < 3) {
             Map<Set<String>, Multiset<T>> map = new HashMap<>();
             Sets.powerSet(state).stream().filter(sub -> sub.size() > 0)
                     .forEach(sub -> {

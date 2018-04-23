@@ -131,6 +131,9 @@ public class Bumblebee {
             CommandExpectation ce = new CommandExpectation(fullStateExpected(fullState));
             expectation.tree.put(command, ce);
 
+            if (expectation.depth == 0) {
+                System.nanoTime();
+            }
             Views views = generalizedStateResults(fullState);
             AtomicDouble sumLikelihood = new AtomicDouble();
             AtomicDouble sumCumulativeReward = new AtomicDouble();

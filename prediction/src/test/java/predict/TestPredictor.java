@@ -77,7 +77,8 @@ class TestPredictor {
 
         List<Prediction<String>> predictions = p.predict(Set.of("ltake", "lrock", "rfood"));
         //there must be no 'false' in prediction
-        assertSingle("true", predictions); // or maybe only check for 'true' likelihood  > 'false' likelihood
+        //assertSingle("true", predictions); // or maybe only check for 'true' likelihood  > 'false' likelihood
+        assertDominant("true", 3, predictions);
 
         /*
         History scan is as follows:
@@ -102,5 +103,12 @@ class TestPredictor {
         assertEquals(1, p.size(), () -> "not single, prediction=" + p.toString());
         assertTrue(p.get(0).likelihood > 0, () -> "prediction=" + p.toString());
         assertEquals(v, p.get(0).value, () -> "prediction=" + p.toString());
+    }
+
+    void assertDominant(String v, double byRatio, List<Prediction<String>> p) {
+        double targetLikelihood = p.stream().filter(pi -> pi.getValue().equals(v)).mapToDouble(Prediction::getLikelihood).sum();
+        double othersLikelihood = p.stream().filter(pi -> !pi.getValue().equals(v)).mapToDouble(Prediction::getLikelihood).sum();
+        assertTrue(targetLikelihood > othersLikelihood * byRatio,
+                String.format("target=%s not  dominant over others=%s", targetLikelihood, othersLikelihood));
     }
 }
