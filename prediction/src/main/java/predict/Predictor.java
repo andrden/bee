@@ -6,9 +6,12 @@ import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 public class Predictor<T> {
+    public static final AtomicLong COUNT_PREDICTIONS = new AtomicLong(0);
+
     private final String name;
     Map<Set<String>, Multiset<T>> history;
     Map<Set<String>, Multiset<T>> historySubsets = new HashMap<>();
@@ -55,6 +58,7 @@ public class Predictor<T> {
     }
 
     public List<Prediction<T>> predict(Set<String> state) {
+        COUNT_PREDICTIONS.incrementAndGet();
         Multiset<T> multiset = history.get(state);
         if (multiset == null || multiset.size() < 3) {
             Map<Set<String>, Multiset<T>> map = new HashMap<>();

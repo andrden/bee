@@ -409,6 +409,7 @@ public class Bumblebee {
     // if that's not enough, an additional map of float or other values could be added later
     public String next(long reward, LinkedHashSet<String> sensorsSet, String description) {
         final long t0 = System.currentTimeMillis();
+        final long countPredictions = Predictor.COUNT_PREDICTIONS.get();
         possibleSensors.addAll(sensorsSet);
         step++;
         if (lastCommand != null) {
@@ -462,6 +463,7 @@ public class Bumblebee {
                         + " ∑=" + reward + " cmd" + (explorativeCommand ? ">" : "=") + lastCommand
                         + " steps=" + print(maxThisAndNextSteps)
                         + " " + (System.currentTimeMillis() - t0) + "ms"
+                        + " #pred=" + (Predictor.COUNT_PREDICTIONS.get()-countPredictions)
                 // + " byCmd=" + expectationsCache.byCommand
         );
         lastSensors = sensorsSet;
