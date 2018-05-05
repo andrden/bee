@@ -78,9 +78,9 @@ public class Predictor<T> {
         if (seenResults.size() > 1) {
             // only if there is some variability, otherwise get "Cannot handle unary class" from weka.classifiers.trees.J48
             try {
-                wekaJ48Predict(state);
+                return wekaJ48Predict(state);
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }
         return naiveShortsightedPredict(state);
@@ -92,7 +92,8 @@ public class Predictor<T> {
         for (String s : allSensors) {
             attributes.add(new Attribute(s, asList("0", "1")));
         }
-        List<String> resultValues = seenResults.stream().map(T::toString).collect(Collectors.toList());
+        List<T> seenResultsList = new ArrayList<>(seenResults);
+        List<String> resultValues = seenResultsList.stream().map(T::toString).collect(Collectors.toList());
         attributes.add(new Attribute("?", resultValues));
         Instances instances = new Instances("name", attributes, historySize);
         instances.setClassIndex(allSensors.size()); // last attribute
@@ -119,12 +120,26 @@ public class Predictor<T> {
 
         System.out.println(tree.toString());
 
-        Instance instance = new DenseInstance(attributes.size() - 1);
+        double[] vals = new double[attributes.size() - 1];
         for (int i = 0; i < allSensors.size(); i++) {
-            instance.setValue(i, state.contains(allSensors.get(i)) ? "1" : "0");
+            //instance.setValue(i, st.contains(allSensors.get(i)) ? "1" : "0");
+            vals[i] = state.contains(allSensors.get(i)) ? 1 : 0;
         }
+        Instance instance = new DenseInstance(1, vals);//new DenseInstance(attributes.size() - 1);
+        instance.setDataset(instances);
+//        for (int i = 0; i < allSensors.size(); i++) {
+//            instance.setValue(i, state.contains(allSensors.get(i)) ? "1" : "0");
+//        }
         double[] distribution = tree.distributionForInstance(instance);
-        return null;
+        List<Prediction<T>> result = new ArrayList<>();
+        for (int i = 0; i < seenResults.size(); i++) {
+            double likelihood = distribution[i];
+            if (likelihood != 0) {
+                result.add(new Prediction<T>(seenResultsList.get(i), likelihood, null));
+            }
+        }
+        System.out.println("prediction for " + state + " is " + result);
+        return result;
     }
 
     private List<Prediction<T>> naiveShortsightedPredict(Set<String> state) {
