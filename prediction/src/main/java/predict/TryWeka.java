@@ -12,7 +12,13 @@ import java.util.ArrayList;
 
 public class TryWeka {
     public static void main(String[] args) throws Exception {
-//        var attributes = new ArrayList<Attribute>();
+//        String trainingFile = "Weka1.csv";
+//        String testFile = "Weka1Test.csv";
+        String trainingFile = "Weka3.csv";
+        String testFile = "Weka3Test.csv";
+
+
+        //        var attributes = new ArrayList<Attribute>();
 //        attributes.add(new Attribute("x"));
 //        attributes.add(new Attribute("a"));
 //        attributes.add(new Attribute("b"));
@@ -27,7 +33,7 @@ public class TryWeka {
 //        Instances data = source.getDataSet();
 
         CSVLoader loader = new CSVLoader();
-        loader.setSource(Thread.currentThread().getContextClassLoader().getResourceAsStream("Weka1.csv"));
+        loader.setSource(Thread.currentThread().getContextClassLoader().getResourceAsStream(trainingFile));
         Instances data = loader.getDataSet();
         data.setClassIndex(0);
         data.classAttribute().type();
@@ -49,8 +55,9 @@ public class TryWeka {
         tree.setOptions(options);     // set the options
         tree.buildClassifier(data);   // build classifier
 
+
         CSVLoader loaderTest = new CSVLoader();
-        loaderTest.setSource(Thread.currentThread().getContextClassLoader().getResourceAsStream("Weka1Test.csv"));
+        loaderTest.setSource(Thread.currentThread().getContextClassLoader().getResourceAsStream(testFile));
         Instances dataTest = loaderTest.getDataSet();
         dataTest.setClassIndex(0);
         dataTest = Filter.useFilter(dataTest, convert);

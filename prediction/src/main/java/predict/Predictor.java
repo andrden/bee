@@ -4,15 +4,28 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
+import weka.classifiers.trees.J48;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.Instance;
+import weka.core.Instances;
+import weka.core.converters.CSVLoader;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.NumericToNominal;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static java.util.Arrays.asList;
+
 public class Predictor<T> {
     public static final AtomicLong COUNT_PREDICTIONS = new AtomicLong(0);
 
     private final String name;
+    int historySize;
+    Set<T> seenResults = new HashSet<>();
+    Set<String> seenSensors = new HashSet<>();
     Map<Set<String>, Multiset<T>> history;
     Map<Set<String>, Multiset<T>> historySubsets = new HashMap<>();
 
@@ -36,6 +49,9 @@ public class Predictor<T> {
     }
 
     public void add(Set<String> state, T result, int occurences) {
+        historySize++;
+        seenResults.add(result);
+        seenSensors.addAll(state);
         history.computeIfAbsent(state, s -> HashMultiset.create()).add(result, occurences);
         addHistorySubsets(state, result, occurences);
     }
@@ -59,6 +75,59 @@ public class Predictor<T> {
 
     public List<Prediction<T>> predict(Set<String> state) {
         COUNT_PREDICTIONS.incrementAndGet();
+        if (seenResults.size() > 1) {
+            // only if there is some variability, otherwise get "Cannot handle unary class" from weka.classifiers.trees.J48
+            try {
+                wekaJ48Predict(state);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return naiveShortsightedPredict(state);
+    }
+
+    private List<Prediction<T>> wekaJ48Predict(Set<String> state) throws Exception {
+        ArrayList<Attribute> attributes = new ArrayList<>();
+        List<String> allSensors = new ArrayList<>(seenSensors);
+        for (String s : allSensors) {
+            attributes.add(new Attribute(s, asList("0", "1")));
+        }
+        List<String> resultValues = seenResults.stream().map(T::toString).collect(Collectors.toList());
+        attributes.add(new Attribute("?", resultValues));
+        Instances instances = new Instances("name", attributes, historySize);
+        instances.setClassIndex(allSensors.size()); // last attribute
+        history.forEach((st, results) -> {
+            results.forEachEntry((v, count) -> {
+//                Instance instance = new DenseInstance(attributes.size());
+//                instance.setWeight(count);
+                double[] vals = new double[attributes.size()];
+                for (int i = 0; i < allSensors.size(); i++) {
+                    //instance.setValue(i, st.contains(allSensors.get(i)) ? "1" : "0");
+                    vals[i] = st.contains(allSensors.get(i)) ? 1 : 0;
+                }
+                vals[allSensors.size()] = resultValues.indexOf(v.toString());
+                //instance.setValue(allSensors.size(), v.toString());
+                instances.add(new DenseInstance(count, vals));
+            });
+        });
+
+        String[] options = new String[1];
+        options[0] = "-U";            // unpruned tree
+        J48 tree = new J48();         // new instance of tree
+        tree.setOptions(options);     // set the options
+        tree.buildClassifier(instances);   // build classifier
+
+        System.out.println(tree.toString());
+
+        Instance instance = new DenseInstance(attributes.size() - 1);
+        for (int i = 0; i < allSensors.size(); i++) {
+            instance.setValue(i, state.contains(allSensors.get(i)) ? "1" : "0");
+        }
+        double[] distribution = tree.distributionForInstance(instance);
+        return null;
+    }
+
+    private List<Prediction<T>> naiveShortsightedPredict(Set<String> state) {
         Multiset<T> multiset = history.get(state);
         if (multiset == null || multiset.size() < 3) {
             Map<Set<String>, Multiset<T>> map = new HashMap<>();
