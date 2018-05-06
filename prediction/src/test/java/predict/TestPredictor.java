@@ -10,6 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TestPredictor {
@@ -73,6 +74,7 @@ class TestPredictor {
         //there must be no 'false' in prediction
         //assertSingle("true", predictions); // or maybe only check for 'true' likelihood  > 'false' likelihood
         assertDominant("true", 3, predictions);
+        assertNotNull(predictions.get(0).getBasedOn());
 
         /*
         History scan is as follows:

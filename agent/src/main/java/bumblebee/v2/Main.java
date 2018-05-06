@@ -17,6 +17,10 @@ public class Main {
         // How to prune this tree?
     }
 
+    static void recognizePlayingCard(){
+        // ?????? OpenCV ??????
+    }
+
     public static void main(String[] args) throws Exception {
         mathSimplify("((exp(x)+exp(-x))/2)^2 - ((exp(x)-exp(-x))/2)^2 + 1 + 4*y^2 + 2x - 4y + x^2 + 1");
 

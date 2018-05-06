@@ -118,7 +118,7 @@ public class Predictor<T> {
         tree.setOptions(options);     // set the options
         tree.buildClassifier(instances);   // build classifier
 
-        System.out.println(tree.toString());
+        //System.out.println(tree.toString());
 
         double[] vals = new double[attributes.size() - 1];
         for (int i = 0; i < allSensors.size(); i++) {
@@ -135,10 +135,10 @@ public class Predictor<T> {
         for (int i = 0; i < seenResults.size(); i++) {
             double likelihood = distribution[i];
             if (likelihood != 0) {
-                result.add(new Prediction<T>(seenResultsList.get(i), likelihood, null));
+                result.add(new Prediction<T>(seenResultsList.get(i), likelihood, Collections.emptySet()));
             }
         }
-        System.out.println("prediction for " + state + " is " + result);
+        //System.out.println("prediction for " + state + " is " + result);
         return result;
     }
 

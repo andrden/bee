@@ -60,7 +60,7 @@ public class World {
                     (view.contains("hand_food") ? "F" : " ") + " " +
                     (view.contains("!") ? "!" : " ") +
                     (view.contains("*") ? "*" : " ");
-            if (i == 770) {
+            if (i == 966) {
                 System.nanoTime();
             }
             action = bumblebee.next(reward, view, description);
