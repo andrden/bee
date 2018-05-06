@@ -4,27 +4,31 @@ import com.google.common.collect.HashMultiset;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
-public class Main {
+public class MainImageRecognize {
     public static void main(String[] args) throws Exception {
-        new Main().run();
+        new MainImageRecognize().run();
     }
 
     BufferedImage image;
+    Map<Point, Point> aroundRed = new HashMap<>(); // Point -> shifted Point, where red shift is most pronounced
+    Set<Point> aroundRedAvg = new HashSet<>();
+    Map<Point, List<Point>> index = new HashMap<>();
 
     void run() throws Exception {
         image = ImageIO.read(getClass().getClassLoader().getResourceAsStream("numbers-crop1.png"));
         System.out.println(image.getWidth() + " x " + image.getHeight());
 
-        Set<Point> aroundRed = new HashSet<>();
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
+                double maxStepToRed = 32; // lesser steps ignored
+                Point bestStep = null;
                 for (double phi = 0; phi < 2 * Math.PI; phi += Math.PI / 6) {
                     int rgb = image.getRGB(x, y);
                     double fromRed = distance(Color.red.getRGB(), rgb);
@@ -34,18 +38,56 @@ public class Main {
                         if (rgbStep != rgb) {
                             double stepFromRed = distance(Color.red.getRGB(), rgbStep);
                             double cosine = cosineColorVectors(rgb, rgbStep, Color.red.getRGB());
-                            if (stepFromRed < fromRed - 32 && cosine > 0.8) {
-                                aroundRed.add(new Point(x, y));
+                            double stepToRed = fromRed - stepFromRed;
+                            if (cosine > 0.8) {
+                                if (maxStepToRed < stepToRed) {
+                                    maxStepToRed = stepToRed;
+                                    bestStep = step;
+                                }
                             }
                         }
                     }
                 }
+                if (bestStep != null) {
+                    aroundRed.put(new Point(x, y), bestStep);
+                }
             }
         }
-        aroundRed.forEach(p -> image.setRGB(p.x, p.y, Color.blue.getRGB()));
-        ImageIO.write(image, "png", new File("/home/denny/proj/bee/recognize/out3.png"));
+        buildIndex();
+        computeAvg();
+
+        aroundRed.keySet().forEach(p -> image.setRGB(p.x, p.y, Color.blue.getRGB()));
+        aroundRedAvg.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
+        ImageIO.write(image, "png", new File("/home/denny/proj/bee/recognize/out5.png"));
 
         //stepsToRed(image);
+    }
+
+    void computeAvg() {
+        for (Point p : aroundRed.keySet()) {
+            List<Point> near = index.get(new Point(p.x / 10 * 10, p.y / 10 * 10)).stream()
+                    .filter(ps -> Math.pow(p.x - ps.x, 2) + Math.pow(p.y - ps.y, 2) < 10 * 10)
+                    .filter(ps -> Math.abs(cosineVectors(p, aroundRed.get(p), ps)) > 0.8)
+                    .collect(Collectors.toList());
+            if (near.size() > 0) {
+                Point psum = new Point(0, 0);
+                near.forEach(psum::add);
+                Point pavg = new Point(psum.x / near.size(), psum.y / near.size());
+                if( Math.pow(pavg.x-p.x,2)+Math.pow(pavg.y-p.y,2)<2*2) {
+                    aroundRedAvg.add(pavg);
+                }
+            }
+        }
+    }
+
+    void buildIndex() {
+        for (Point p : aroundRed.keySet()) {
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    index.computeIfAbsent(new Point(p.x / 10 * 10 + i * 10, p.y / 10 * 10 + j * 10), pp -> new ArrayList<>()).add(p);
+                }
+            }
+        }
     }
 
     double cosineColorVectors(int from, int to1, int to2) {
@@ -58,27 +100,21 @@ public class Main {
         Point3 vector2 = new Point3(cto2.getRed() - cfrom.getRed(),
                 cto2.getGreen() - cfrom.getGreen(),
                 cto2.getBlue() - cfrom.getBlue());
-        double norm1sq = vector1.scalar(vector1);
-        double norm2sq = vector2.scalar(vector2);
-        double scalar = vector1.scalar(vector2);
+        double norm1sq = vector1.scalarMult(vector1);
+        double norm2sq = vector2.scalarMult(vector2);
+        double scalar = vector1.scalarMult(vector2);
         double ret = scalar / Math.sqrt(norm1sq * norm2sq);
         return ret;
     }
 
-    class Point3 {
-        int x;
-        int y;
-        int z;
-
-        public Point3(int x, int y, int z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-
-        double scalar(Point3 v) {
-            return x * v.x + y * v.y + z * v.z;
-        }
+    double cosineVectors(Point from, Point to1, Point to2) {
+        Point vector1 = new Point(to1.x - from.x, to1.y - from.y);
+        Point vector2 = new Point(to2.x - from.x, to2.y - from.y);
+        double norm1sq = vector1.scalarMult(vector1);
+        double norm2sq = vector2.scalarMult(vector2);
+        double scalar = vector1.scalarMult(vector2);
+        double ret = scalar / Math.sqrt(norm1sq * norm2sq);
+        return ret;
     }
 
     class Point {
@@ -90,6 +126,11 @@ public class Main {
             this.y = y;
         }
 
+        void add(Point p) {
+            x += p.x;
+            y += p.y;
+        }
+
         public int getX() {
             return x;
         }
@@ -98,10 +139,28 @@ public class Main {
             return y;
         }
 
+        double scalarMult(Point v) {
+            return x * v.x + y * v.y;
+        }
+
         Point shiftBy(int step, double phi) {
             Point p = new Point(x + (int) (step * Math.cos(phi)), y + (int) (step * Math.sin(phi)));
             if (p.x >= 0 && p.y >= 0 && p.x < image.getWidth() && p.y < image.getHeight()) return p;
             return null;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Point point = (Point) o;
+            return x == point.x &&
+                    y == point.y;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(x, y);
         }
     }
 
