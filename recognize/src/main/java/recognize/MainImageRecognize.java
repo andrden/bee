@@ -16,10 +16,11 @@ public class MainImageRecognize {
         new MainImageRecognize().run();
     }
 
+    Random rand = new Random(1);
     BufferedImage image;
-    Map<Point, Point> aroundRed = new HashMap<>(); // Point -> shifted Point, where red shift is most pronounced
-    Set<Point> aroundRedAvg = new HashSet<>();
-    Map<Point, List<Point>> index = new HashMap<>();
+    Map<XY, XY> aroundRed = new HashMap<>(); // XY -> shifted XY, where red shift is most pronounced
+    //Set<XY> aroundRedAvg = new HashSet<>();
+    Map<XY, List<XY>> index = new HashMap<>();
 
     void run() throws Exception {
         image = ImageIO.read(getClass().getClassLoader().getResourceAsStream("numbers-crop1.png"));
@@ -28,11 +29,11 @@ public class MainImageRecognize {
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
                 double maxStepToRed = 32; // lesser steps ignored
-                Point bestStep = null;
+                XY bestStep = null;
                 for (double phi = 0; phi < 2 * Math.PI; phi += Math.PI / 6) {
                     int rgb = image.getRGB(x, y);
                     double fromRed = distance(Color.red.getRGB(), rgb);
-                    Point step = new Point(x, y).shiftBy(5, phi);
+                    XY step = checkBounds(new XY(x, y).shiftBy(5, phi));
                     if (step != null) {
                         int rgbStep = image.getRGB(step.x, step.y);
                         if (rgbStep != rgb) {
@@ -49,42 +50,114 @@ public class MainImageRecognize {
                     }
                 }
                 if (bestStep != null) {
-                    aroundRed.put(new Point(x, y), bestStep);
+                    aroundRed.put(new XY(x, y), bestStep);
                 }
             }
         }
         buildIndex();
-        computeAvg();
+//        computeAvg();
 
-        aroundRed.keySet().forEach(p -> image.setRGB(p.x, p.y, Color.blue.getRGB()));
-        aroundRedAvg.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
-        ImageIO.write(image, "png", new File("/home/denny/proj/bee/recognize/out5.png"));
+        aroundRed.keySet().forEach(p -> {
+            image.setRGB(p.x, p.y, Color.blue.getRGB());
+        });
+//        aroundRed.keySet().forEach(p -> {
+//            if(rand.nextDouble()<0.04) line(image, p, aroundRed.get(p), Color.green);
+//        });
+        List<XY> curve = computeEdges();
+        curve.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
+//        aroundRedAvg.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
+        ImageIO.write(image, "png", new File("/home/denny/proj/bee/recognize/out7.png"));
 
-        //stepsToRed(image);
-    }
+        XY curveMin = XY.min(curve);
+        XY curveMax = XY.max(curve);
 
-    void computeAvg() {
-        for (Point p : aroundRed.keySet()) {
-            List<Point> near = index.get(new Point(p.x / 10 * 10, p.y / 10 * 10)).stream()
-                    .filter(ps -> Math.pow(p.x - ps.x, 2) + Math.pow(p.y - ps.y, 2) < 10 * 10)
-                    .filter(ps -> Math.abs(cosineVectors(p, aroundRed.get(p), ps)) > 0.8)
-                    .collect(Collectors.toList());
-            if (near.size() > 0) {
-                Point psum = new Point(0, 0);
-                near.forEach(psum::add);
-                Point pavg = new Point(psum.x / near.size(), psum.y / near.size());
-                if( Math.pow(pavg.x-p.x,2)+Math.pow(pavg.y-p.y,2)<2*2) {
-                    aroundRedAvg.add(pavg);
-                }
-            }
+        BufferedImage sub = new BufferedImage(curveMax.x - curveMin.x + 1, curveMax.y - curveMin.y + 1, image.getType());
+        for (int i = 1; i < curve.size(); i++) {
+            line(sub, curve.get(i - 1).subtract(curveMin), curve.get(i).subtract(curveMin), Color.red);
         }
+        for (int i = 0; i < curve.size(); i++) {
+            sub.setRGB(curve.get(i).x - curveMin.x, curve.get(i).y - curveMin.y, Color.blue.getRGB());
+        }
+        ImageIO.write(sub, "png", new File("/home/denny/proj/bee/recognize/outSub1.png"));
+
+        //displayRedScaledSteps(image);
     }
+
+    void line(BufferedImage image, XY from, XY to, Color color) {
+        Graphics2D g = image.createGraphics();
+        g.setColor(color);
+        BasicStroke bs = new BasicStroke(1);
+        g.setStroke(bs);
+        g.drawLine(from.x, from.y, to.x, to.y);
+        //        for( int i=0; i<=points; i++){
+//
+//        }
+    }
+
+    List<XY> computeEdges() {
+        //XY start = aroundRed.keySet().iterator().next();
+        XY start = new ArrayList<>(aroundRed.keySet()).get(10000);
+        var used = new HashMap<XY, Integer>();
+        var ret = new ArrayList<XY>();
+        for (int i = 0; i < 440; i++) {
+            System.out.println(i + " " + start);
+            ret.add(start);
+            used.put(start, i);
+            XY oldStart = start;
+
+            var ii = i;
+            Optional<XY> end = index.get(new XY(start.x / 10 * 10, start.y / 10 * 10)).stream()
+                    .filter(ps -> used.containsKey(ps) && used.get(ps) < ii - 30)
+                    .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
+                    .sorted(Comparator.comparingDouble(ps -> ps.distanceSq(oldStart)))
+                    .findFirst();
+            if (end.isPresent()) {
+                return ret.subList(used.get(end.get()), ret.size());
+            }
+
+            XY vectorToRed = XY.average(index.get(new XY(start.x / 10 * 10, start.y / 10 * 10)).stream()
+                    .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
+                    .map(ps -> aroundRed.get(ps).subtract(ps))
+                    .collect(Collectors.toList()));
+            XY shiftPoint = start.copy();
+            shiftPoint.add(vectorToRed.vectorTurnLeft90());
+
+            //XY stepToRed = aroundRed.get(start);
+            //XY leftPoint = start.vectorTurnLeft90(stepToRed);
+            start = index.get(new XY(start.x / 10 * 10, start.y / 10 * 10)).stream()
+                    .filter(ps -> !used.containsKey(ps))
+                    .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
+//                    .filter(ps -> cosineVectors(oldStart, shiftPoint, ps) > 0.8)
+//                    .sorted(Comparator.comparingDouble(ps -> ps.distanceSq(oldStart)))
+                    .sorted(Comparator.comparingDouble(ps -> -cosineVectors(oldStart, shiftPoint, ps)))
+                    .findFirst()
+                    .get();
+        }
+        return null;
+    }
+
+//    void computeAvg() {
+//        for (XY p : aroundRed.keySet()) {
+//            List<XY> near = index.get(new XY(p.x / 10 * 10, p.y / 10 * 10)).stream()
+//                    .filter(ps -> Math.pow(p.x - ps.x, 2) + Math.pow(p.y - ps.y, 2) < 10 * 10)
+//                    .filter(ps -> Math.abs(cosineVectors(p, aroundRed.get(p), ps)) > 0.8)
+//                    .collect(Collectors.toList());
+//            if (near.size() > 0) {
+//                XY psum = new XY(0, 0);
+//                near.forEach(psum::add);
+//                XY pavg = new XY(psum.x / near.size(), psum.y / near.size());
+//                if( Math.pow(pavg.x-p.x,2)+Math.pow(pavg.y-p.y,2)<2*2) {
+//                    aroundRedAvg.add(pavg);
+//                }
+//            }
+//        }
+//    }
 
     void buildIndex() {
-        for (Point p : aroundRed.keySet()) {
+        for (XY p : aroundRed.keySet()) {
             for (int i = -1; i <= 1; i++) {
                 for (int j = -1; j <= 1; j++) {
-                    index.computeIfAbsent(new Point(p.x / 10 * 10 + i * 10, p.y / 10 * 10 + j * 10), pp -> new ArrayList<>()).add(p);
+                    index.computeIfAbsent(new XY(p.x / 10 * 10 + i * 10, p.y / 10 * 10 + j * 10), pp -> new ArrayList<>()).add(p);
                 }
             }
         }
@@ -107,9 +180,9 @@ public class MainImageRecognize {
         return ret;
     }
 
-    double cosineVectors(Point from, Point to1, Point to2) {
-        Point vector1 = new Point(to1.x - from.x, to1.y - from.y);
-        Point vector2 = new Point(to2.x - from.x, to2.y - from.y);
+    double cosineVectors(XY from, XY to1, XY to2) {
+        XY vector1 = new XY(to1.x - from.x, to1.y - from.y);
+        XY vector2 = new XY(to2.x - from.x, to2.y - from.y);
         double norm1sq = vector1.scalarMult(vector1);
         double norm2sq = vector2.scalarMult(vector2);
         double scalar = vector1.scalarMult(vector2);
@@ -117,54 +190,13 @@ public class MainImageRecognize {
         return ret;
     }
 
-    class Point {
-        int x;
-        int y;
-
-        public Point(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        void add(Point p) {
-            x += p.x;
-            y += p.y;
-        }
-
-        public int getX() {
-            return x;
-        }
-
-        public int getY() {
-            return y;
-        }
-
-        double scalarMult(Point v) {
-            return x * v.x + y * v.y;
-        }
-
-        Point shiftBy(int step, double phi) {
-            Point p = new Point(x + (int) (step * Math.cos(phi)), y + (int) (step * Math.sin(phi)));
-            if (p.x >= 0 && p.y >= 0 && p.x < image.getWidth() && p.y < image.getHeight()) return p;
-            return null;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Point point = (Point) o;
-            return x == point.x &&
-                    y == point.y;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(x, y);
-        }
+    XY checkBounds(XY p) {
+        if (p.x >= 0 && p.y >= 0 && p.x < image.getWidth() && p.y < image.getHeight()) return p;
+        return null;
     }
 
-    private void stepsToRed(BufferedImage image) throws IOException {
+
+    private void displayRedScaledSteps(BufferedImage image) throws IOException {
         var multiset = HashMultiset.create();
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
