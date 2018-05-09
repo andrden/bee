@@ -78,6 +78,7 @@ public class MainImageRecognize {
 
         for (int ci = 0; ci < curves.size(); ci++) {
             var curve = curves.get(ci);
+            curve = new Inertia(curve).alignedCurve();
             XY curveMin = XY.min(curve);
             XY curveMax = XY.max(curve);
             if (curveMax.x - curveMin.x < 20) continue;

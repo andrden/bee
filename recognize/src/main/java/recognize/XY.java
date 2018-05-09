@@ -25,9 +25,14 @@ public class XY {
         return new XY(x - p.x, y - p.y);
     }
 
+    XY rotateRight(double alpha) {
+        return new XY((int) (x * Math.cos(alpha) + y * Math.sin(alpha)),
+                (int) (-x * Math.sin(alpha) + y * Math.cos(alpha)));
+    }
+
     static XY min(List<XY> list) {
         XY ret = list.get(0).copy();
-        for(XY p :list){
+        for (XY p : list) {
             ret.x = Math.min(ret.x, p.x);
             ret.y = Math.min(ret.y, p.y);
         }
@@ -36,7 +41,7 @@ public class XY {
 
     static XY max(List<XY> list) {
         XY ret = list.get(0).copy();
-        for(XY p :list){
+        for (XY p : list) {
             ret.x = Math.max(ret.x, p.x);
             ret.y = Math.max(ret.y, p.y);
         }
