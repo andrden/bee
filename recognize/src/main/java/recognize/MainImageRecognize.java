@@ -20,7 +20,7 @@ public class MainImageRecognize {
     BufferedImage image;
     Map<XY, XY> aroundRed = new HashMap<>(); // XY -> shifted XY, where red shift is most pronounced
     //Set<XY> aroundRedAvg = new HashSet<>();
-    Map<XY, List<XY>> index = new HashMap<>();
+    Index index;
 
     void run() throws Exception {
         image = ImageIO.read(getClass().getClassLoader().getResourceAsStream("numbers-crop1.png"));
@@ -54,7 +54,7 @@ public class MainImageRecognize {
                 }
             }
         }
-        buildIndex();
+        index = new Index(aroundRed.keySet());
 //        computeAvg();
 
         aroundRed.keySet().forEach(p -> {
@@ -63,22 +63,34 @@ public class MainImageRecognize {
 //        aroundRed.keySet().forEach(p -> {
 //            if(rand.nextDouble()<0.04) line(image, p, aroundRed.get(p), Color.green);
 //        });
-        List<XY> curve = computeEdges();
-        curve.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
+        Set<XY> excludedByCurves = new HashSet<>();
+        List<List<XY>> curves = new ArrayList<>();
+        for (; ; ) {
+            List<XY> curve = computeEdges(excludedByCurves);
+            if (curve == null) break;
+            System.out.println("======================");
+            curves.add(curve);
+            //curve.forEach(p -> excludedByCurves.addAll(index.around(p)));
+            curve.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
+        }
 //        aroundRedAvg.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
         ImageIO.write(image, "png", new File("/home/denny/proj/bee/recognize/out7.png"));
 
-        XY curveMin = XY.min(curve);
-        XY curveMax = XY.max(curve);
+        for (int ci = 0; ci < curves.size(); ci++) {
+            var curve = curves.get(ci);
+            XY curveMin = XY.min(curve);
+            XY curveMax = XY.max(curve);
+            if (curveMax.x - curveMin.x < 20) continue;
 
-        BufferedImage sub = new BufferedImage(curveMax.x - curveMin.x + 1, curveMax.y - curveMin.y + 1, image.getType());
-        for (int i = 1; i < curve.size(); i++) {
-            line(sub, curve.get(i - 1).subtract(curveMin), curve.get(i).subtract(curveMin), Color.red);
+            BufferedImage sub = new BufferedImage(curveMax.x - curveMin.x + 1, curveMax.y - curveMin.y + 1, image.getType());
+            for (int i = 1; i < curve.size(); i++) {
+                line(sub, curve.get(i - 1).subtract(curveMin), curve.get(i).subtract(curveMin), Color.red);
+            }
+            for (int i = 0; i < curve.size(); i++) {
+                sub.setRGB(curve.get(i).x - curveMin.x, curve.get(i).y - curveMin.y, Color.blue.getRGB());
+            }
+            ImageIO.write(sub, "png", new File("/home/denny/proj/bee/recognize/outSub" + ci + ".png"));
         }
-        for (int i = 0; i < curve.size(); i++) {
-            sub.setRGB(curve.get(i).x - curveMin.x, curve.get(i).y - curveMin.y, Color.blue.getRGB());
-        }
-        ImageIO.write(sub, "png", new File("/home/denny/proj/bee/recognize/outSub1.png"));
 
         //displayRedScaledSteps(image);
     }
@@ -94,19 +106,22 @@ public class MainImageRecognize {
 //        }
     }
 
-    List<XY> computeEdges() {
+    List<XY> computeEdges(Set<XY> excluded) {
         //XY start = aroundRed.keySet().iterator().next();
-        XY start = new ArrayList<>(aroundRed.keySet()).get(10000);
+        //XY start = new ArrayList<>(aroundRed.keySet()).get(10000);
+        XY start = aroundRed.keySet().stream().filter(p -> !excluded.contains(p)).findFirst().orElse(null);
+        if (start == null) return null;
         var used = new HashMap<XY, Integer>();
         var ret = new ArrayList<XY>();
-        for (int i = 0; i < 440; i++) {
+        for (int i = 0; ; i++) {
             System.out.println(i + " " + start);
             ret.add(start);
             used.put(start, i);
+            excluded.addAll(index.around(start));
             XY oldStart = start;
 
             var ii = i;
-            Optional<XY> end = index.get(new XY(start.x / 10 * 10, start.y / 10 * 10)).stream()
+            Optional<XY> end = index.around(start).stream()
                     .filter(ps -> used.containsKey(ps) && used.get(ps) < ii - 30)
                     .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
                     .sorted(Comparator.comparingDouble(ps -> ps.distanceSq(oldStart)))
@@ -115,7 +130,7 @@ public class MainImageRecognize {
                 return ret.subList(used.get(end.get()), ret.size());
             }
 
-            XY vectorToRed = XY.average(index.get(new XY(start.x / 10 * 10, start.y / 10 * 10)).stream()
+            XY vectorToRed = XY.average(index.around(start).stream()
                     .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
                     .map(ps -> aroundRed.get(ps).subtract(ps))
                     .collect(Collectors.toList()));
@@ -124,16 +139,16 @@ public class MainImageRecognize {
 
             //XY stepToRed = aroundRed.get(start);
             //XY leftPoint = start.vectorTurnLeft90(stepToRed);
-            start = index.get(new XY(start.x / 10 * 10, start.y / 10 * 10)).stream()
+            start = index.around(start).stream()
                     .filter(ps -> !used.containsKey(ps))
                     .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
 //                    .filter(ps -> cosineVectors(oldStart, shiftPoint, ps) > 0.8)
 //                    .sorted(Comparator.comparingDouble(ps -> ps.distanceSq(oldStart)))
                     .sorted(Comparator.comparingDouble(ps -> -cosineVectors(oldStart, shiftPoint, ps)))
                     .findFirst()
-                    .get();
+                    .orElse(null);
+            if (start == null) return null;
         }
-        return null;
     }
 
 //    void computeAvg() {
@@ -152,16 +167,6 @@ public class MainImageRecognize {
 //            }
 //        }
 //    }
-
-    void buildIndex() {
-        for (XY p : aroundRed.keySet()) {
-            for (int i = -1; i <= 1; i++) {
-                for (int j = -1; j <= 1; j++) {
-                    index.computeIfAbsent(new XY(p.x / 10 * 10 + i * 10, p.y / 10 * 10 + j * 10), pp -> new ArrayList<>()).add(p);
-                }
-            }
-        }
-    }
 
     double cosineColorVectors(int from, int to1, int to2) {
         Color cfrom = new Color(from);
