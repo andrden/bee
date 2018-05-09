@@ -23,7 +23,7 @@ public class MainImageRecognize {
     Index index;
 
     void run() throws Exception {
-        image = ImageIO.read(getClass().getClassLoader().getResourceAsStream("numbers-crop1.png"));
+        image = ImageIO.read(getClass().getClassLoader().getResourceAsStream("numbers-crop2.png"));
         System.out.println(image.getWidth() + " x " + image.getHeight());
 
         for (int x = 0; x < image.getWidth(); x++) {
