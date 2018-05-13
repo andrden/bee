@@ -23,7 +23,8 @@ public class MainImageRecognize {
     Index index;
 
     void run() throws Exception {
-        image = ImageIO.read(getClass().getClassLoader().getResourceAsStream("numbers-crop2.png"));
+        image = ImageIO.read(getClass().getClassLoader().getResourceAsStream("cards-crop1.png"));
+        String outFilesPrefix = "/home/denny/proj/bee/recognize/card";
         System.out.println(image.getWidth() + " x " + image.getHeight());
 
         for (int x = 0; x < image.getWidth(); x++) {
@@ -74,11 +75,12 @@ public class MainImageRecognize {
             curve.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
         }
 //        aroundRedAvg.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
-        ImageIO.write(image, "png", new File("/home/denny/proj/bee/recognize/out7.png"));
+        //excludedByCurves.forEach(p -> image.setRGB(p.x, p.y, Color.yellow.getRGB()));
+        ImageIO.write(image, "png", new File(outFilesPrefix+".png"));
 
         for (int ci = 0; ci < curves.size(); ci++) {
             var curve = curves.get(ci);
-            curve = new Inertia(curve).alignedCurve();
+            //curve = new Inertia(curve).alignedCurve();
             XY curveMin = XY.min(curve);
             XY curveMax = XY.max(curve);
             if (curveMax.x - curveMin.x < 20) continue;
@@ -90,7 +92,7 @@ public class MainImageRecognize {
             for (int i = 0; i < curve.size(); i++) {
                 sub.setRGB(curve.get(i).x - curveMin.x, curve.get(i).y - curveMin.y, Color.blue.getRGB());
             }
-            ImageIO.write(sub, "png", new File("/home/denny/proj/bee/recognize/outSub" + ci + ".png"));
+            ImageIO.write(sub, "png", new File(outFilesPrefix+"sub" + ci + ".png"));
         }
 
         //displayRedScaledSteps(image);
@@ -110,45 +112,48 @@ public class MainImageRecognize {
     List<XY> computeEdges(Set<XY> excluded) {
         //XY start = aroundRed.keySet().iterator().next();
         //XY start = new ArrayList<>(aroundRed.keySet()).get(10000);
-        XY start = aroundRed.keySet().stream().filter(p -> !excluded.contains(p)).findFirst().orElse(null);
-        if (start == null) return null;
-        var used = new HashMap<XY, Integer>();
-        var ret = new ArrayList<XY>();
-        for (int i = 0; ; i++) {
-            System.out.println(i + " " + start);
-            ret.add(start);
-            used.put(start, i);
-            excluded.addAll(index.around(start));
-            XY oldStart = start;
+        curve:
+        for(;;) {
+            XY start = aroundRed.keySet().stream().filter(p -> !excluded.contains(p)).findFirst().orElse(null);
+            if (start == null) return null;
+            var used = new HashMap<XY, Integer>();
+            var ret = new ArrayList<XY>();
+            for (int i = 0; ; i++) {
+                System.out.println(i + " " + start);
+                ret.add(start);
+                used.put(start, i);
+                excluded.addAll(index.around(start));
+                XY oldStart = start;
 
-            var ii = i;
-            Optional<XY> end = index.around(start).stream()
-                    .filter(ps -> used.containsKey(ps) && used.get(ps) < ii - 30)
-                    .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
-                    .sorted(Comparator.comparingDouble(ps -> ps.distanceSq(oldStart)))
-                    .findFirst();
-            if (end.isPresent()) {
-                return ret.subList(used.get(end.get()), ret.size());
-            }
+                var ii = i;
+                Optional<XY> end = index.around(start).stream()
+                        .filter(ps -> used.containsKey(ps) && used.get(ps) < ii - 30)
+                        .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
+                        .sorted(Comparator.comparingDouble(ps -> ps.distanceSq(oldStart)))
+                        .findFirst();
+                if (end.isPresent()) {
+                    return ret.subList(used.get(end.get()), ret.size());
+                }
 
-            XY vectorToRed = XY.average(index.around(start).stream()
-                    .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
-                    .map(ps -> aroundRed.get(ps).subtract(ps))
-                    .collect(Collectors.toList()));
-            XY shiftPoint = start.copy();
-            shiftPoint.add(vectorToRed.vectorTurnLeft90());
+                XY vectorToRed = XY.average(index.around(start).stream()
+                        .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
+                        .map(ps -> aroundRed.get(ps).subtract(ps))
+                        .collect(Collectors.toList()));
+                XY shiftPoint = start.copy();
+                shiftPoint.add(vectorToRed.vectorTurnLeft90());
 
-            //XY stepToRed = aroundRed.get(start);
-            //XY leftPoint = start.vectorTurnLeft90(stepToRed);
-            start = index.around(start).stream()
-                    .filter(ps -> !used.containsKey(ps))
-                    .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
+                //XY stepToRed = aroundRed.get(start);
+                //XY leftPoint = start.vectorTurnLeft90(stepToRed);
+                start = index.around(start).stream()
+                        .filter(ps -> !used.containsKey(ps))
+                        .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
 //                    .filter(ps -> cosineVectors(oldStart, shiftPoint, ps) > 0.8)
 //                    .sorted(Comparator.comparingDouble(ps -> ps.distanceSq(oldStart)))
-                    .sorted(Comparator.comparingDouble(ps -> -cosineVectors(oldStart, shiftPoint, ps)))
-                    .findFirst()
-                    .orElse(null);
-            if (start == null) return null;
+                        .sorted(Comparator.comparingDouble(ps -> -cosineVectors(oldStart, shiftPoint, ps)))
+                        .findFirst()
+                        .orElse(null);
+                if (start == null) continue curve;
+            }
         }
     }
 
