@@ -76,7 +76,7 @@ public class MainImageRecognize {
         }
 //        aroundRedAvg.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
         //excludedByCurves.forEach(p -> image.setRGB(p.x, p.y, Color.yellow.getRGB()));
-        ImageIO.write(image, "png", new File(outFilesPrefix+".png"));
+        ImageIO.write(image, "png", new File(outFilesPrefix + ".png"));
 
         for (int ci = 0; ci < curves.size(); ci++) {
             var curve = curves.get(ci);
@@ -85,17 +85,39 @@ public class MainImageRecognize {
             XY curveMax = XY.max(curve);
             if (curveMax.x - curveMin.x < 20) continue;
 
-            BufferedImage sub = new BufferedImage(curveMax.x - curveMin.x + 1, curveMax.y - curveMin.y + 1, image.getType());
-            for (int i = 1; i < curve.size(); i++) {
-                line(sub, curve.get(i - 1).subtract(curveMin), curve.get(i).subtract(curveMin), Color.red);
+            curve = XY.rescaleHeight(curve, 100);
+            curveMin = XY.min(curve);
+            curveMax = XY.max(curve);
+
+            int width = curveMax.x - curveMin.x + 1;
+            BufferedImage sub = new BufferedImage(2 * width, curveMax.y - curveMin.y + 1, image.getType());
+            polygon(sub, curve, Color.red);
+            for (int line = 0; line < 100; line++) {
+                int count = 0;
+                for (int x = 0; x < width; x++) {
+                    if (sub.getRGB(x, line) == Color.red.getRGB()) count++;
+                }
+                line(sub, new XY(width, line), new XY(width + count, line), Color.lightGray);
             }
+            //            for (int i = 1; i < curve.size(); i++) {
+//                line(sub, curve.get(i - 1).subtract(curveMin), curve.get(i).subtract(curveMin), Color.red);
+//            }
             for (int i = 0; i < curve.size(); i++) {
                 sub.setRGB(curve.get(i).x - curveMin.x, curve.get(i).y - curveMin.y, Color.blue.getRGB());
             }
-            ImageIO.write(sub, "png", new File(outFilesPrefix+"sub" + ci + ".png"));
+            ImageIO.write(sub, "png", new File(outFilesPrefix + "sub" + ci + ".png"));
         }
 
         //displayRedScaledSteps(image);
+    }
+
+    void polygon(BufferedImage image, List<XY> curve, Color color) {
+        Graphics2D g = image.createGraphics();
+        g.setColor(color);
+        g.setPaint(color);
+        Polygon p = new Polygon();
+        curve.forEach(i -> p.addPoint(i.x, i.y));
+        g.fillPolygon(p);
     }
 
     void line(BufferedImage image, XY from, XY to, Color color) {
@@ -113,7 +135,7 @@ public class MainImageRecognize {
         //XY start = aroundRed.keySet().iterator().next();
         //XY start = new ArrayList<>(aroundRed.keySet()).get(10000);
         curve:
-        for(;;) {
+        for (; ; ) {
             XY start = aroundRed.keySet().stream().filter(p -> !excluded.contains(p)).findFirst().orElse(null);
             if (start == null) return null;
             var used = new HashMap<XY, Integer>();

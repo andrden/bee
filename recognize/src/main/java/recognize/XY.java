@@ -2,6 +2,7 @@ package recognize;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class XY {
     int x;
@@ -28,6 +29,14 @@ public class XY {
     XY rotateRight(double alpha) {
         return new XY((int) (x * Math.cos(alpha) + y * Math.sin(alpha)),
                 (int) (-x * Math.sin(alpha) + y * Math.cos(alpha)));
+    }
+
+    static List<XY> rescaleHeight(List<XY> curve, int newH) {
+        XY min = min(curve);
+        XY max = max(curve);
+        return curve.stream()
+                .map(p -> new XY((p.x - min.x) * newH / (max.y - min.y), (p.y - min.y) * newH / (max.y - min.y)))
+                .collect(Collectors.toList());
     }
 
     static XY min(List<XY> list) {
