@@ -1,14 +1,20 @@
 package recognize;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class Curve {
-    List<XY> curve;
+    List<XY> curveLocation;
+    List<XY> curveRescaled;
     int[] lines;
 
-    public Curve(List<XY> curve, int[] lines) {
-        this.curve = curve;
-        this.lines = lines; - need normalize lines descriptor?
+    public Curve(List<XY> curveLocation, List<XY> curveRescaled, int[] lines) {
+        this.curveLocation = curveLocation;
+        this.curveRescaled = curveRescaled;
+        // normalize lines descriptor
+        int sum = Arrays.stream(lines).sum();
+        int target = 100 * lines.length;
+        this.lines = Arrays.stream(lines).map(v -> v * target / sum).toArray();
     }
 
     double profileDistance(Curve other) {

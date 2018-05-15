@@ -63,6 +63,7 @@ public class CurvesExtractor {
 
         for (int ci = 0; ci < curves.size(); ci++) {
             var curve = curves.get(ci);
+            var curveLocation = curve;
             //curve = new Inertia(curve).alignedCurve();
             XY curveMin = XY.min(curve);
             XY curveMax = XY.max(curve);
@@ -74,7 +75,7 @@ public class CurvesExtractor {
 
             int width = curveMax.x - curveMin.x + 1;
             BufferedImage sub = new BufferedImage(2 * width, curveMax.y - curveMin.y + 1, image.getType());
-            Images.polygon(sub, curve, Color.red);
+            Images.fillPolygon(sub, curve, Color.red);
             int[] lines = new int[100];
             for (int line = 0; line < 100; line++) {
                 int count = 0;
@@ -83,7 +84,7 @@ public class CurvesExtractor {
                 }
                 lines[line] = count;
             }
-            finalCurves.add(new Curve(curve, lines));
+            finalCurves.add(new Curve(curveLocation, curve, lines));
         }
 
     }

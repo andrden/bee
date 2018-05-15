@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
 
@@ -28,7 +27,9 @@ public class MainImageRecognize {
             known.add(new CurvesExtractor(n, ImageIO.read(getClass().getClassLoader().getResourceAsStream("cards/" + n + ".png"))));
         }
 
-        image = ImageIO.read(getClass().getClassLoader().getResourceAsStream("cards-crop1.png"));
+        //String photoFile = "cards-crop1.png";
+        String photoFile = "cards-angle45.png";
+        image = ImageIO.read(getClass().getClassLoader().getResourceAsStream(photoFile));
         String outFilesPrefix = "/home/denny/proj/bee/recognize/card";
         System.out.println(image.getWidth() + " x " + image.getHeight());
 
@@ -41,31 +42,44 @@ public class MainImageRecognize {
 //        });
 //        aroundRedAvg.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
         //curvesExtractor.excludedByCurves.forEach(p -> image.setRGB(p.x, p.y, Color.yellow.getRGB()));
-        ImageIO.write(image, "png", new File(outFilesPrefix + ".png"));
 
         for (int ci = 0; ci < curvesExtractor.finalCurves.size(); ci++) {
             var curve = curvesExtractor.finalCurves.get(ci);
-            XY curveMin = XY.min(curve.curve);
-            XY curveMax = XY.max(curve.curve);
+            XY curveMin = XY.min(curve.curveRescaled);
+            XY curveMax = XY.max(curve.curveRescaled);
 
             int width = curveMax.x - curveMin.x + 1;
             BufferedImage sub = new BufferedImage(2 * width, curveMax.y - curveMin.y + 1, image.getType());
-            Images.polygon(sub, curve.curve, Color.red);
+            Images.fillPolygon(sub, curve.curveRescaled, Color.red);
             for (int line = 0; line < 100; line++) {
                 line(sub, new XY(width, line), new XY(width + curve.lines[line], line), Color.lightGray);
             }
             //            for (int i = 1; i < curve.size(); i++) {
 //                line(sub, curve.get(i - 1).subtract(curveMin), curve.get(i).subtract(curveMin), Color.red);
 //            }
-            for (int i = 0; i < curve.curve.size(); i++) {
-                sub.setRGB(curve.curve.get(i).x - curveMin.x, curve.curve.get(i).y - curveMin.y, Color.blue.getRGB());
+            for (int i = 0; i < curve.curveRescaled.size(); i++) {
+                sub.setRGB(curve.curveRescaled.get(i).x - curveMin.x, curve.curveRescaled.get(i).y - curveMin.y, Color.blue.getRGB());
             }
             String fname = "sub" + ci + ".png";
             ImageIO.write(sub, "png", new File(outFilesPrefix + fname));
-            known.forEach(k -> System.out.println(fname + " " + k.name + " " + (int)k.finalCurves.get(0).profileDistance(curve)));
+            var knownDistances = known.stream().collect(Collectors.toMap(k -> k.name, k -> k.finalCurves.get(0).profileDistance(curve)));
+            known.forEach(k -> System.out.println(fname + " " + k.name + " " + knownDistances.get(k.name).intValue()));
+
+            Images.drawPolygon(image, curve.curveLocation, Color.yellow);
+//            if( min(knownDistances).equals("hearts") ) {
+//                Images.fillPolygon(image, curve.curveLocation, Color.yellow);
+//            }
+//            if( min(knownDistances).equals("diamonds") ) {
+//                Images.fillPolygon(image, curve.curveLocation, Color.green);
+//            }
         }
+        ImageIO.write(image, "png", new File(outFilesPrefix + ".png"));
 
         //displayRedScaledSteps(image);
+    }
+
+    String min(Map<String, Double> map) {
+        return map.entrySet().stream().sorted(Comparator.comparingDouble(Map.Entry::getValue)).map(Map.Entry::getKey).findFirst().get();
     }
 
 
