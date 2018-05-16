@@ -23,7 +23,7 @@ public class CurvesExtractor {
 
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
-                double maxStepToRed = 32; // lesser steps ignored
+                double maxStepToRed = 20; // lesser steps ignored
                 XY bestStep = null;
                 for (double phi = 0; phi < 2 * Math.PI; phi += Math.PI / 6) {
                     int rgb = image.getRGB(x, y);
@@ -97,47 +97,55 @@ public class CurvesExtractor {
     List<XY> computeEdges(Set<XY> excluded) {
         //XY start = aroundRed.keySet().iterator().next();
         //XY start = new ArrayList<>(aroundRed.keySet()).get(10000);
-        curve:
         for (; ; ) {
             XY start = aroundRed.keySet().stream().filter(p -> !excluded.contains(p)).findFirst().orElse(null);
             if (start == null) return null;
-            var used = new HashMap<XY, Integer>();
-            var ret = new ArrayList<XY>();
-            for (int i = 0; ; i++) {
-                System.out.println(i + " " + start);
-                ret.add(start);
-                used.put(start, i);
-                excluded.addAll(index.around(start));
-                XY oldStart = start;
+            List<XY> curve = traceCurve(excluded, start);
+            if (curve != null) return curve;
+        }
+    }
 
-                var ii = i;
-                Optional<XY> end = index.around(start).stream()
-                        .filter(ps -> used.containsKey(ps) && used.get(ps) < ii - 30)
-                        .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
-                        .sorted(Comparator.comparingDouble(ps -> ps.distanceSq(oldStart)))
-                        .findFirst();
-                if (end.isPresent()) {
-                    return ret.subList(used.get(end.get()), ret.size());
-                }
+    private List<XY> traceCurve(Set<XY> excluded, XY start) {
+        var used = new HashMap<XY, Integer>();
+        var ret = new ArrayList<XY>();
+        Set<XY> localExcluded = new HashSet<>();
+        for (int i = 0; ; i++) {
+            System.out.println(i + " " + start);
+            ret.add(start);
+            used.put(start, i);
+            localExcluded.addAll(index.around(start));
+            XY oldStart = start;
 
-                XY vectorToRed = XY.average(index.around(start).stream()
-                        .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
-                        .map(ps -> aroundRed.get(ps).subtract(ps))
-                        .collect(Collectors.toList()));
-                XY shiftPoint = start.copy();
-                shiftPoint.add(vectorToRed.vectorTurnLeft90());
+            var ii = i;
+            Optional<XY> end = index.around(start).stream()
+                    .filter(ps -> used.containsKey(ps) && used.get(ps) < ii - 30)
+                    .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
+                    .min(Comparator.comparingDouble(ps -> ps.distanceSq(oldStart)));
+            if (end.isPresent()) {
+                excluded.addAll(localExcluded);
+                return ret.subList(used.get(end.get()), ret.size());
+            }
 
-                //XY stepToRed = aroundRed.get(start);
-                //XY leftPoint = start.vectorTurnLeft90(stepToRed);
-                start = index.around(start).stream()
-                        .filter(ps -> !used.containsKey(ps))
-                        .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
-//                    .filter(ps -> cosineVectors(oldStart, shiftPoint, ps) > 0.8)
-//                    .sorted(Comparator.comparingDouble(ps -> ps.distanceSq(oldStart)))
-                        .sorted(Comparator.comparingDouble(ps -> -cosineVectors(oldStart, shiftPoint, ps)))
-                        .findFirst()
-                        .orElse(null);
-                if (start == null) continue curve;
+            XY vectorToRed = XY.average(index.around(start).stream()
+                    .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
+                    .map(ps -> aroundRed.get(ps).subtract(ps))
+                    .collect(Collectors.toList()));
+            XY shiftPoint = start.copy();
+            shiftPoint.add(vectorToRed.vectorTurnLeft90());
+
+            //XY stepToRed = aroundRed.get(start);
+            //XY leftPoint = start.vectorTurnLeft90(stepToRed);
+            //                    .filter(ps -> cosineVectors(oldStart, shiftPoint, ps) > 0.8)
+            //                    .sorted(Comparator.comparingDouble(ps -> ps.distanceSq(oldStart)))
+            start = index.around(start).stream()
+                    .filter(ps -> !used.containsKey(ps))
+                    .filter(p -> !excluded.contains(p))
+                    .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
+                    .min(Comparator.comparingDouble(ps -> -cosineVectors(oldStart, shiftPoint, ps)))
+                    .orElse(null);
+            if (start == null){
+                excluded.addAll(localExcluded);
+                return null;
             }
         }
     }
