@@ -23,7 +23,7 @@ public class CurvesExtractor {
 
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
-                double maxStepToRed = 20; // lesser steps ignored
+                double maxStepToRed = 16; // lesser steps ignored
                 XY bestStep = null;
                 for (double phi = 0; phi < 2 * Math.PI; phi += Math.PI / 6) {
                     int rgb = image.getRGB(x, y);
