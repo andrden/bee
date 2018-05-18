@@ -23,27 +23,7 @@ public class CurvesExtractor {
 
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
-                double maxStepToRed = 16; // lesser steps ignored
-                XY bestStep = null;
-                for (double phi = 0; phi < 2 * Math.PI; phi += Math.PI / 6) {
-                    int rgb = image.getRGB(x, y);
-                    double fromRed = Colors.distance(Color.red.getRGB(), rgb);
-                    XY step = checkBounds(new XY(x, y).shiftBy(5, phi));
-                    if (step != null) {
-                        int rgbStep = image.getRGB(step.x, step.y);
-                        if (rgbStep != rgb) {
-                            double stepFromRed = Colors.distance(Color.red.getRGB(), rgbStep);
-                            double cosine = Colors.cosineColorVectors(rgb, rgbStep, Color.red.getRGB());
-                            double stepToRed = fromRed - stepFromRed;
-                            if (cosine > 0.8) {
-                                if (maxStepToRed < stepToRed) {
-                                    maxStepToRed = stepToRed;
-                                    bestStep = step;
-                                }
-                            }
-                        }
-                    }
-                }
+                XY bestStep = findBestStep(image, x, y);
                 if (bestStep != null) {
                     aroundRed.put(new XY(x, y), bestStep);
                 }
@@ -87,6 +67,39 @@ public class CurvesExtractor {
             finalCurves.add(new Curve(curveLocation, curve, lines));
         }
 
+    }
+
+    private XY findBestStep(BufferedImage image, int x, int y) {
+        double maxStepToRed = 16; // lesser steps ignored
+        XY bestStep = null;
+        //boolean debug = x == 185 && y == 255;
+        boolean debug = x == 235 && y == 270;
+        for (double phi = 0; phi < 2 * Math.PI; phi += Math.PI / 6) {
+            int rgb = image.getRGB(x, y);
+            double fromRed = Colors.distance(Color.red.getRGB(), rgb);
+            XY step = checkBounds(new XY(x, y).shiftBy(5, phi));
+            if (step != null) {
+                int rgbStep = image.getRGB(step.x, step.y);
+                if (rgbStep != rgb) {
+                    double stepFromRed = Colors.distance(Color.red.getRGB(), rgbStep);
+                    double cosine = Colors.cosineColorVectors(rgb, rgbStep, Color.red.getRGB());
+                    double stepToRed = fromRed - stepFromRed;
+                    if (debug) {
+                        System.out.println(phi + " " + step + " cos=" + cosine + " stepToRed=" + stepToRed);
+                    }
+                    if (cosine > 0.75) {
+                        if (maxStepToRed < stepToRed) {
+                            maxStepToRed = stepToRed;
+                            bestStep = step;
+                        }
+                    }
+                }
+            }
+        }
+        if (debug) {
+            System.out.println("bestStep=" + bestStep + " from " + new XY(x, y));
+        }
+        return bestStep;
     }
 
     XY checkBounds(XY p) {
@@ -143,7 +156,7 @@ public class CurvesExtractor {
                     .filter(ps -> oldStart.distanceSq(ps) < 5 * 5)
                     .min(Comparator.comparingDouble(ps -> -cosineVectors(oldStart, shiftPoint, ps)))
                     .orElse(null);
-            if (start == null){
+            if (start == null) {
                 excluded.addAll(localExcluded);
                 return null;
             }
