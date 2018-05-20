@@ -20,6 +20,7 @@ public class CurvesExtractor {
     public CurvesExtractor(String name, BufferedImage image) {
         this.name = name;
         this.image = image;
+        histrogram();
 
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
@@ -67,6 +68,20 @@ public class CurvesExtractor {
             finalCurves.add(new Curve(curveLocation, curve, lines));
         }
 
+    }
+
+    void histrogram() {
+        int BIN = 10;
+        int[] hist = new int[(int) (256 * Math.sqrt(3) / BIN)];
+        for (int x = 0; x < image.getWidth(); x++) {
+            for (int y = 0; y < image.getHeight(); y++) {
+                double fromRed = Colors.distance(Color.red.getRGB(), image.getRGB(x, y));
+                hist[(int) (fromRed / BIN)]++;
+            }
+        }
+        for (int i = 0; i < hist.length; i++) {
+            System.out.println("Histogram " + i + " " + hist[i]);
+        }
     }
 
     private XY findBestStep(BufferedImage image, int x, int y) {

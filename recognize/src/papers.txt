@@ -1,0 +1,29 @@
+========================================================================================================================
+
+https://aip.scitation.org/doi/pdf/10.1063/1.5005213
+A new edge detection algorithm based on Canny idea
+Yingke Feng, Jinmin Zhang, and Siming Wang
+Citation: AIP Conference Proceedings 1890, 040011 (2017); doi: 10.1063/1.5005213
+
+========================================================================================================================
+
+https://arxiv.org/abs/1804.02864
+Semantic Edge Detection with Diverse Deep Supervision
+Yun Liu, Ming-Ming Cheng, JiaWang Bian, Le Zhang, Peng-Tao Jiang, Yang Cao
+(Submitted on 9 Apr 2018)
+
+========================================================================================================================
+
+ImageMagick Canny edge detector?
+convert hearts-blurry.png -canny 0x1+10%+30% e.png
+-canny radiusxsigma{+lower-percent}{+upper-percent}
+
+Canny edge detector uses a multi-stage algorithm to detect a wide range of edges in the image.
+The thresholds range from 0 to 100% (e.g. -canny 0x1+10%+30%) with {+lower-percent} < {+upper-percent}.
+If {+upper-percent} is increased but {+lower-percent} remains the same, lesser edge components will be detected,
+but their lengths will be the same. If {+lower-percent} is increased but {+upper-percent} is the same,
+the same number of edge components will be detected but their lengths will be shorter.
+The default thresholds are shown.
+The radiusxsigma controls a gaussian blur applied to the input image to reduce noise and smooth the edges.
+
+========================================================================================================================
