@@ -47,7 +47,7 @@ public class Histogram {
         boolean less = false;
         boolean more = false;
         for (double d : around) {
-            int i = getIdx(distanceFromRed);
+            int i = getIdx(d);
             if (i < minPos) less = true;
             if (i > minPos) more = true;
         }

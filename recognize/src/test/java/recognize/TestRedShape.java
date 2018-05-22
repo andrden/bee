@@ -52,6 +52,7 @@ public class TestRedShape {
         for (Curve curve : c.finalCurves) {
             Images.drawPolygon(img, curve.curveLocation, Color.yellow);
         }
+        img.setRGB(200,128, Color.GREEN.getRGB());
 
         File dir = new File("/tmp/imgDebug");
         dir.mkdirs();
