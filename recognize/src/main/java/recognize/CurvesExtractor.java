@@ -5,10 +5,12 @@ import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CurvesExtractor {
     String name;
     BufferedImage image;
+    Histogram histogram;
 
     Map<XY, XY> aroundRed = new HashMap<>(); // XY -> shifted XY, where red shift is most pronounced
     //Set<XY> aroundRedAvg = new HashSet<>();
@@ -20,11 +22,27 @@ public class CurvesExtractor {
     public CurvesExtractor(String name, BufferedImage image) {
         this.name = name;
         this.image = image;
-        histrogram();
+        histogram = histrogramSegment();
 
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
-                XY bestStep = findBestStep(image, x, y);
+                int minimumStep; // lesser steps ignored
+                double minCosine = 0.75;
+                if (histogram.hasBorder() && x > 0 && y > 0 && x < image.getWidth() - 1 && y < image.getHeight() - 1) {
+                    final int rgb = image.getRGB(x, y);
+                    final double fromRed = Colors.distance(Color.red.getRGB(), rgb);
+                    double[] around = Arrays.stream(colourAround(x, y))
+                            .mapToDouble(c -> Colors.distance(Color.red.getRGB(), c))
+                            .toArray();
+                    if (!histogram.isEdge(fromRed, around)) {
+                        continue;
+                    }
+                    minimumStep = 0; // less strict checks because there is already indication that this is an edge point
+                    minCosine = 0.1;
+                } else {
+                    minimumStep = 16;
+                }
+                XY bestStep = findBestStep(image, x, y, minimumStep, minCosine);
                 if (bestStep != null) {
                     aroundRed.put(new XY(x, y), bestStep);
                 }
@@ -70,28 +88,40 @@ public class CurvesExtractor {
 
     }
 
-    void histrogram() {
-        int BIN = 10;
-        int[] hist = new int[(int) (256 * Math.sqrt(3) / BIN)];
+    int[] colourAround(int x, int y) {
+        return new int[]{
+                image.getRGB(x - 1, y - 1),
+                image.getRGB(x - 1, y),
+                image.getRGB(x - 1, y + 1),
+                image.getRGB(x, y - 1),
+                image.getRGB(x, y + 1),
+                image.getRGB(x + 1, y - 1),
+                image.getRGB(x + 1, y),
+                image.getRGB(x + 1, y + 1),
+        };
+    }
+
+    Histogram histrogramSegment() {
+        Histogram h = new Histogram();
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
                 double fromRed = Colors.distance(Color.red.getRGB(), image.getRGB(x, y));
-                hist[(int) (fromRed / BIN)]++;
+                h.add(fromRed);
             }
         }
-        for (int i = 0; i < hist.length; i++) {
-            System.out.println("Histogram " + i + " " + hist[i]);
-        }
+        h.finish();
+        return h;
     }
 
-    private XY findBestStep(BufferedImage image, int x, int y) {
-        double maxStepToRed = 16; // lesser steps ignored
+    private XY findBestStep(BufferedImage image, int x, int y, int minimumStep, final double minCosine) {
+        final int rgb = image.getRGB(x, y);
+        final double fromRed = Colors.distance(Color.red.getRGB(), rgb);
+
+        double maxStepToRed = minimumStep; // lesser steps ignored
         XY bestStep = null;
         //boolean debug = x == 185 && y == 255;
         boolean debug = x == 235 && y == 270;
         for (double phi = 0; phi < 2 * Math.PI; phi += Math.PI / 6) {
-            int rgb = image.getRGB(x, y);
-            double fromRed = Colors.distance(Color.red.getRGB(), rgb);
             XY step = checkBounds(new XY(x, y).shiftBy(5, phi));
             if (step != null) {
                 int rgbStep = image.getRGB(step.x, step.y);
@@ -102,7 +132,7 @@ public class CurvesExtractor {
                     if (debug) {
                         System.out.println(phi + " " + step + " cos=" + cosine + " stepToRed=" + stepToRed);
                     }
-                    if (cosine > 0.75) {
+                    if (cosine > minCosine) {
                         if (maxStepToRed < stepToRed) {
                             maxStepToRed = stepToRed;
                             bestStep = step;

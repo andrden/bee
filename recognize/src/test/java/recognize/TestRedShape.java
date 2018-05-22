@@ -36,6 +36,16 @@ public class TestRedShape {
     void testImage(String f, int expectedCountCurves) throws Exception {
         BufferedImage img = ImageIO.read(getClass().getClassLoader().getResourceAsStream(f));
         var c = new CurvesExtractor("", img);
+        for (int x = 0; x < img.getWidth(); x++) {
+            for (int y = 0; y < img.getHeight(); y++) {
+                final int rgb = img.getRGB(x, y);
+                final double fromRed = Colors.distance(Color.red.getRGB(), rgb);
+                if(c.histogram.getIdx(fromRed)<c.histogram.minPos) img.setRGB(x,y,Color.WHITE.getRGB());
+                if(c.histogram.getIdx(fromRed)>c.histogram.minPos) img.setRGB(x,y,Color.BLACK.getRGB());
+                if(c.histogram.getIdx(fromRed)==c.histogram.minPos) img.setRGB(x,y,Color.RED.getRGB());
+            }
+        }
+
         c.aroundRed.keySet().forEach(p -> {
             img.setRGB(p.x, p.y, Color.blue.getRGB());
         });
