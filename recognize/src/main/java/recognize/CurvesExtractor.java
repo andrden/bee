@@ -5,12 +5,15 @@ import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class CurvesExtractor {
     String name;
     BufferedImage image;
-    Histogram histogram;
+
+    int histogramsGrid;
+    int histW;
+    int histH;
+    Map<XY, Histogram> histograms = new HashMap<>();
 
     Map<XY, XY> aroundRed = new HashMap<>(); // XY -> shifted XY, where red shift is most pronounced
     //Set<XY> aroundRedAvg = new HashSet<>();
@@ -20,12 +23,18 @@ public class CurvesExtractor {
     List<Curve> finalCurves = new ArrayList<>();
 
     public CurvesExtractor(String name, BufferedImage image) {
+        this(name, image, 1);
+    }
+
+    public CurvesExtractor(String name, BufferedImage image, int histogramsGrid) {
         this.name = name;
         this.image = image;
-        histogram = histrogramSegment();
+        this.histogramsGrid=histogramsGrid;
+        buildHistograms(histogramsGrid);
 
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
+                Histogram histogram = getHistogramForPoint(x, y);
                 int minimumStep; // lesser steps ignored
                 double minCosine = 0.75;
                 if (histogram.hasBorder() && x > 0 && y > 0 && x < image.getWidth() - 1 && y < image.getHeight() - 1) {
@@ -101,16 +110,35 @@ public class CurvesExtractor {
         };
     }
 
-    Histogram histrogramSegment() {
-        Histogram h = new Histogram();
-        for (int x = 0; x < image.getWidth(); x++) {
-            for (int y = 0; y < image.getHeight(); y++) {
-                double fromRed = Colors.distance(Color.red.getRGB(), image.getRGB(x, y));
-                h.add(fromRed);
+    Histogram getHistogramForPoint(int x, int y) {
+        XY key = new XY(x / histW, y / histH);
+        Histogram h = histograms.get(key);
+        if (h == null) {
+            System.nanoTime();
+        }
+        return h;
+    }
+
+    void buildHistograms(int histogramsGrid) {
+        histW = (int) Math.ceil(image.getWidth() / (double) histogramsGrid);
+        histH = (int) Math.ceil(image.getHeight() / (double) histogramsGrid);
+        for (int histI = 0; histI < histogramsGrid; histI++) {
+            for (int histJ = 0; histJ < histogramsGrid; histJ++) {
+                XY histPos = new XY(histI * histW, histJ * histH);
+                Histogram h = new Histogram();
+                for (int x = 0; x < histW; x++) {
+                    for (int y = 0; y < histH; y++) {
+                        XY p = checkBounds(new XY(x + histPos.x, y + histPos.y));
+                        if (p != null) {
+                            double fromRed = Colors.distance(Color.red.getRGB(), image.getRGB(p.x, p.y));
+                            h.add(fromRed);
+                        }
+                    }
+                }
+                h.finish();
+                histograms.put(new XY(histI, histJ), h);
             }
         }
-        h.finish();
-        return h;
     }
 
     private XY findBestStep(BufferedImage image, int x, int y, int minimumStep, final double minCosine) {

@@ -33,7 +33,7 @@ public class MainImageRecognize {
         String outFilesPrefix = "/home/denny/proj/bee/recognize/card";
         System.out.println(image.getWidth() + " x " + image.getHeight());
 
-        CurvesExtractor curvesExtractor = new CurvesExtractor("", image);
+        CurvesExtractor curvesExtractor = new CurvesExtractor("", image, 5);
         curvesExtractor.aroundRed.keySet().forEach(p -> {
             image.setRGB(p.x, p.y, Color.blue.getRGB());
         });
@@ -63,7 +63,7 @@ public class MainImageRecognize {
             String fname = "sub" + ci + ".png";
             ImageIO.write(sub, "png", new File(outFilesPrefix + fname));
             var knownDistances = known.stream().collect(Collectors.toMap(k -> k.name, k -> k.finalCurves.get(0).profileDistance(curve)));
-            known.forEach(k -> System.out.println(fname + " " + k.name + " " + knownDistances.get(k.name).intValue()));
+            known.forEach(k -> System.out.println(fname + " distance " + k.name + " " + knownDistances.get(k.name).intValue()));
 
             Images.drawPolygon(image, curve.curveLocation, Color.yellow);
 //            if( min(knownDistances).equals("hearts") ) {
@@ -72,6 +72,11 @@ public class MainImageRecognize {
 //            if( min(knownDistances).equals("diamonds") ) {
 //                Images.fillPolygon(image, curve.curveLocation, Color.green);
 //            }
+        }
+        for( int i=0; i<curvesExtractor.histogramsGrid; i++ ){
+            for( int j=0; j<curvesExtractor.histogramsGrid; j++ ){
+                image.getGraphics().drawRect(i*curvesExtractor.histW, j*curvesExtractor.histH, curvesExtractor.histW, curvesExtractor.histH);
+            }
         }
         ImageIO.write(image, "png", new File(outFilesPrefix + ".png"));
 
