@@ -12,6 +12,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +27,7 @@ public class TestRedShape {
     @TestFactory
     Collection<DynamicTest> dynamicTestsWithCollection() {
         return asList(
+                DynamicTest.dynamicTest("9-blurry.png", () -> testImage("9-blurry.png", 1)),
                 DynamicTest.dynamicTest("hearts-blurry.png", () -> testImage("hearts-blurry.png", 1)),
                 DynamicTest.dynamicTest("hearts-blurry2.png", () -> testImage("hearts-blurry2.png", 1)),
                 DynamicTest.dynamicTest("diamonds-blurry.png", () -> testImage("diamonds-blurry.png", 2)),
@@ -33,16 +35,22 @@ public class TestRedShape {
         );
     }
 
+    Histogram histo(Map<XY, Histogram> histograms){
+        assertEquals(1, histograms.size());
+        return histograms.values().iterator().next();
+    }
+
     void testImage(String f, int expectedCountCurves) throws Exception {
         BufferedImage img = ImageIO.read(getClass().getClassLoader().getResourceAsStream(f));
         var c = new CurvesExtractor("", img);
+        Histogram histogram = histo(c.histograms);
         for (int x = 0; x < img.getWidth(); x++) {
             for (int y = 0; y < img.getHeight(); y++) {
                 final int rgb = img.getRGB(x, y);
                 final double fromRed = Colors.distance(Color.red.getRGB(), rgb);
-                if(c.histogram.getIdx(fromRed)<c.histogram.minPos) img.setRGB(x,y,Color.WHITE.getRGB());
-                if(c.histogram.getIdx(fromRed)>c.histogram.minPos) img.setRGB(x,y,Color.BLACK.getRGB());
-                if(c.histogram.getIdx(fromRed)==c.histogram.minPos) img.setRGB(x,y,Color.RED.getRGB());
+                if(histogram.getIdx(fromRed)<histogram.minPos) img.setRGB(x,y,Color.WHITE.getRGB());
+                if(histogram.getIdx(fromRed)>histogram.minPos) img.setRGB(x,y,Color.BLACK.getRGB());
+                if(histogram.getIdx(fromRed)==histogram.minPos) img.setRGB(x,y,Color.RED.getRGB());
             }
         }
 
