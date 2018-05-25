@@ -27,6 +27,7 @@ public class TestRedShape {
     @TestFactory
     Collection<DynamicTest> dynamicTestsWithCollection() {
         return asList(
+                DynamicTest.dynamicTest("9-blurry3.png", () -> testImage("9-blurry3.png", 2)),
                 DynamicTest.dynamicTest("9-blurry2.png", () -> testImage("9-blurry2.png", 1)),
                 DynamicTest.dynamicTest("9-blurry.png", () -> testImage("9-blurry.png", 1)),
                 DynamicTest.dynamicTest("hearts-blurry.png", () -> testImage("hearts-blurry.png", 1)),
@@ -36,7 +37,7 @@ public class TestRedShape {
         );
     }
 
-    Histogram histo(Map<XY, Histogram> histograms){
+    Histogram histo(Map<XY, Histogram> histograms) {
         assertEquals(1, histograms.size());
         return histograms.values().iterator().next();
     }
@@ -49,9 +50,13 @@ public class TestRedShape {
             for (int y = 0; y < img.getHeight(); y++) {
                 final int rgb = img.getRGB(x, y);
                 final double fromRed = Colors.distance(Color.red.getRGB(), rgb);
-                if(histogram.getIdx(fromRed)<histogram.minPos) img.setRGB(x,y,Color.WHITE.getRGB());
-                if(histogram.getIdx(fromRed)>histogram.minPos) img.setRGB(x,y,Color.BLACK.getRGB());
-                if(histogram.getIdx(fromRed)==histogram.minPos) img.setRGB(x,y,Color.RED.getRGB());
+                long pos = 2 * histogram.separators.stream().filter(s -> s < histogram.getIdx(fromRed)).count()
+                        + histogram.separators.stream().filter(s -> s == histogram.getIdx(fromRed)).count();
+                int gray = (int) pos * 255 / (histogram.separators.size() * 2 + 1);
+                img.setRGB(x, y, new Color(gray, gray, gray).getRGB());
+//                if(histogram.getIdx(fromRed)<histogram.minPos) img.setRGB(x,y,Color.WHITE.getRGB());
+//                if(histogram.getIdx(fromRed)>histogram.minPos) img.setRGB(x,y,Color.BLACK.getRGB());
+//                if(histogram.getIdx(fromRed)==histogram.minPos) img.setRGB(x,y,Color.RED.getRGB());
             }
         }
 
@@ -61,7 +66,7 @@ public class TestRedShape {
         for (Curve curve : c.finalCurves) {
             Images.drawPolygon(img, curve.curveLocation, Color.yellow);
         }
-        img.setRGB(200,128, Color.GREEN.getRGB());
+//        img.setRGB(200, 128, Color.GREEN.getRGB());
 
         File dir = new File("/tmp/imgDebug");
         dir.mkdirs();
@@ -71,7 +76,7 @@ public class TestRedShape {
         for (Curve curve : c.finalCurves) {
             BufferedImage im = new BufferedImage(img.getWidth(), img.getHeight(), img.getType());
             Images.drawPolygon(im, curve.curveLocation, Color.yellow);
-            ImageIO.write(im, "png", new File(dir, "shape" + i + "-" + f));
+            ImageIO.write(im, "png", new File(dir, "shape-" + f + "." + i + ".png"));
             i++;
         }
 
