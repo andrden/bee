@@ -27,6 +27,7 @@ public class TestRedShape {
     @TestFactory
     Collection<DynamicTest> dynamicTestsWithCollection() {
         return asList(
+                DynamicTest.dynamicTest("9-blurry2.png", () -> testImage("9-blurry2.png", 1)),
                 DynamicTest.dynamicTest("9-blurry.png", () -> testImage("9-blurry.png", 1)),
                 DynamicTest.dynamicTest("hearts-blurry.png", () -> testImage("hearts-blurry.png", 1)),
                 DynamicTest.dynamicTest("hearts-blurry2.png", () -> testImage("hearts-blurry2.png", 1)),

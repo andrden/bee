@@ -1,5 +1,8 @@
 package recognize;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Histogram {
     int BIN = 10;
     int[] hist = new int[(int) (256 * Math.sqrt(3) / BIN)];
@@ -7,6 +10,7 @@ public class Histogram {
     int start = 1;
     int end = hist.length - 2;
     int minPos;
+    List<Integer> separators = new ArrayList<>();
 
     void add(double distanceFromRed) {
         int idx = getIdx(distanceFromRed);
@@ -32,7 +36,13 @@ public class Histogram {
                 minPos = i;
             }
         }
-        System.out.println(String.format("histo start=%s end=%s minPos=%s hasBorder=%s", start, end, minPos, hasBorder()));
+        for (int i = start; i <= end; i++) {
+            if (hist[i] < hist[i - 1] && hist[i] < hist[i + 1]) {
+                separators.add(i);
+            }
+        }
+        System.out.println(String.format("histo start=%s end=%s minPos=%s hasBorder=%s sep=%s",
+                start, end, minPos, hasBorder(), separators));
     }
 
     boolean hasBorder() {
@@ -40,16 +50,24 @@ public class Histogram {
     }
 
     boolean isEdge(double distanceFromRed, double[] around) {
+        //isEdge(distanceFromRed, around, minPos);
+        for (int sep : separators) {
+            if (isEdge(distanceFromRed, around, sep)) return true;
+        }
+        return false;
+    }
+
+    boolean isEdge(double distanceFromRed, double[] around, int separator) {
         int idx = getIdx(distanceFromRed);
         //return idx >= start && idx <= end;
 
-        if (idx == minPos) return true; // border colour
+        if (idx == separator) return true; // border colour
         boolean less = false;
         boolean more = false;
         for (double d : around) {
             int i = getIdx(d);
-            if (i < minPos) less = true;
-            if (i > minPos) more = true;
+            if (i < separator) less = true;
+            if (i > separator) more = true;
         }
         return less & more; // bordering 2 separated regions
     }
