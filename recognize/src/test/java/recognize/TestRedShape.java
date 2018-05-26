@@ -43,6 +43,9 @@ public class TestRedShape {
     }
 
     void testImage(String f, int expectedCountCurves) throws Exception {
+        File dir = new File("/tmp/imgDebug");
+        dir.mkdirs();
+
         BufferedImage img = ImageIO.read(getClass().getClassLoader().getResourceAsStream(f));
         var c = new CurvesExtractor("", img);
         Histogram histogram = histo(c.histograms);
@@ -50,26 +53,26 @@ public class TestRedShape {
             for (int y = 0; y < img.getHeight(); y++) {
                 final int rgb = img.getRGB(x, y);
                 final double fromRed = Colors.distance(Color.red.getRGB(), rgb);
-                long pos = 2 * histogram.separators.stream().filter(s -> s < histogram.getIdx(fromRed)).count()
-                        + histogram.separators.stream().filter(s -> s == histogram.getIdx(fromRed)).count();
+                int idx = histogram.getIdx(fromRed);
+                long pos = 2 * histogram.separators.stream().filter(s -> s < idx).count()
+                        + histogram.separators.stream().filter(s -> s == idx).count();
                 int gray = (int) pos * 255 / (histogram.separators.size() * 2 + 1);
                 img.setRGB(x, y, new Color(gray, gray, gray).getRGB());
+                if(idx>=25 && idx<=28) img.setRGB(x, y, Color.GREEN.getRGB());
 //                if(histogram.getIdx(fromRed)<histogram.minPos) img.setRGB(x,y,Color.WHITE.getRGB());
 //                if(histogram.getIdx(fromRed)>histogram.minPos) img.setRGB(x,y,Color.BLACK.getRGB());
 //                if(histogram.getIdx(fromRed)==histogram.minPos) img.setRGB(x,y,Color.RED.getRGB());
             }
         }
 
-        c.aroundRed.keySet().forEach(p -> {
-            img.setRGB(p.x, p.y, Color.blue.getRGB());
-        });
-        for (Curve curve : c.finalCurves) {
-            Images.drawPolygon(img, curve.curveLocation, Color.yellow);
-        }
+//        c.aroundRed.keySet().forEach(p -> {
+//            img.setRGB(p.x, p.y, Color.blue.getRGB());
+//        });
+//        for (Curve curve : c.finalCurves) {
+//            Images.drawPolygon(img, curve.curveLocation, Color.yellow);
+//        }
 //        img.setRGB(200, 128, Color.GREEN.getRGB());
 
-        File dir = new File("/tmp/imgDebug");
-        dir.mkdirs();
         ImageIO.write(img, "png", new File(dir, "shape-" + f));
 
         int i = 0;
