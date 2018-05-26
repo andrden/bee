@@ -58,7 +58,7 @@ public class TestRedShape {
                         + histogram.separators.stream().filter(s -> s == idx).count();
                 int gray = (int) pos * 255 / (histogram.separators.size() * 2 + 1);
                 img.setRGB(x, y, new Color(gray, gray, gray).getRGB());
-                if(idx>=25 && idx<=28) img.setRGB(x, y, Color.GREEN.getRGB());
+                if (idx >= 25 && idx <= 28) img.setRGB(x, y, Color.GREEN.getRGB());
 //                if(histogram.getIdx(fromRed)<histogram.minPos) img.setRGB(x,y,Color.WHITE.getRGB());
 //                if(histogram.getIdx(fromRed)>histogram.minPos) img.setRGB(x,y,Color.BLACK.getRGB());
 //                if(histogram.getIdx(fromRed)==histogram.minPos) img.setRGB(x,y,Color.RED.getRGB());
@@ -89,16 +89,17 @@ public class TestRedShape {
     @TestFactory
     Collection<DynamicTest> dynamicTestsBlur() {
         return asList(
-                DynamicTest.dynamicTest("hearts-blurry2.png 185", () -> testBlur(185, 250, 265)),
-                DynamicTest.dynamicTest("hearts-blurry2.png 235", () -> testBlur(235, 260, 280))
+                DynamicTest.dynamicTest("hearts-blurry2.png 185", () -> testBlur("hearts-blurry2.png", 185, 250, 265)),
+                DynamicTest.dynamicTest("hearts-blurry2.png 235", () -> testBlur("hearts-blurry2.png", 235, 260, 280)),
+                DynamicTest.dynamicTest("9-blurry3.png 200", () -> testBlur("9-blurry3.png", 200, 200, 400))
         );
     }
 
-    void testBlur(final int xline, int y1, int y2) throws Exception {
+    void testBlur(String file, final int xline, int y1, int y2) throws Exception {
         File dir = new File("/tmp/imgDebug/testBlur");
         dir.mkdirs();
 
-        BufferedImage img = ImageIO.read(getClass().getClassLoader().getResourceAsStream("hearts-blurry2.png"));
+        BufferedImage img = ImageIO.read(getClass().getClassLoader().getResourceAsStream(file));
 
         BufferedImage colors = new BufferedImage(256 * 3 + (int) (256 * Math.sqrt(3)), img.getHeight(), img.getType());
         Graphics gcolors = colors.getGraphics();
@@ -116,7 +117,7 @@ public class TestRedShape {
             colors.setRGB(256 * 2, y, Color.black.getRGB());
             colors.setRGB(256 * 3, y, Color.black.getRGB());
         }
-        ImageIO.write(colors, "png", new File(dir, xline + "hearts-blurry2-colors.png"));
+        ImageIO.write(colors, "png", new File(dir, xline + file + ".colors.png"));
 
         var c = new CurvesExtractor("", img);
         for (int y = 0; y < img.getHeight(); y++) {
@@ -125,7 +126,7 @@ public class TestRedShape {
         c.aroundRed.keySet().forEach(p -> {
             img.setRGB(p.x, p.y, Color.blue.getRGB());
         });
-        ImageIO.write(img, "png", new File(dir, xline + "hearts-blurry2.png"));
+        ImageIO.write(img, "png", new File(dir, xline + "-hearts-blurry2.png"));
 
         long count = c.aroundRed.keySet().stream().filter(p -> p.x == xline && (p.y >= y1 && p.y <= y2)).count();
         assertNotEquals(0L, count);
