@@ -27,6 +27,7 @@ public class TestRedShape {
     @TestFactory
     Collection<DynamicTest> dynamicTestsWithCollection() {
         return asList(
+                DynamicTest.dynamicTest("9-blurry4.png", () -> testImage("9-blurry4.png", 1)),
                 DynamicTest.dynamicTest("9-blurry3.png", () -> testImage("9-blurry3.png", 2)),
                 DynamicTest.dynamicTest("9-blurry2.png", () -> testImage("9-blurry2.png", 1)),
                 DynamicTest.dynamicTest("9-blurry.png", () -> testImage("9-blurry.png", 1)),
@@ -58,16 +59,16 @@ public class TestRedShape {
                         + histogram.separators.stream().filter(s -> s == idx).count();
                 int gray = (int) pos * 255 / (histogram.separators.size() * 2 + 1);
                 img.setRGB(x, y, new Color(gray, gray, gray).getRGB());
-                if (idx >= 25 && idx <= 28) img.setRGB(x, y, Color.GREEN.getRGB());
+                //if (idx >= 25 && idx <= 28) img.setRGB(x, y, Color.GREEN.getRGB());
 //                if(histogram.getIdx(fromRed)<histogram.minPos) img.setRGB(x,y,Color.WHITE.getRGB());
 //                if(histogram.getIdx(fromRed)>histogram.minPos) img.setRGB(x,y,Color.BLACK.getRGB());
 //                if(histogram.getIdx(fromRed)==histogram.minPos) img.setRGB(x,y,Color.RED.getRGB());
             }
         }
 
-//        c.aroundRed.keySet().forEach(p -> {
-//            img.setRGB(p.x, p.y, Color.blue.getRGB());
-//        });
+        c.aroundRed.keySet().forEach(p -> {
+            img.setRGB(p.x, p.y, Color.blue.getRGB());
+        });
 //        for (Curve curve : c.finalCurves) {
 //            Images.drawPolygon(img, curve.curveLocation, Color.yellow);
 //        }
