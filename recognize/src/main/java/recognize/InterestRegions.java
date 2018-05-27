@@ -11,7 +11,9 @@ import java.util.Set;
 
 public class InterestRegions {
     public static void main(String[] args) throws Exception {
-        String photoFile = "cards-angle45-3pct.png";
+        //String photoFile = "cards-angle45-3pct.png";
+        //String photoFile = "cards-angle45.png";
+        String photoFile = "cards-angle45-5pct.png";
         new InterestRegions(ImageIO.read(InterestRegions.class.getClassLoader().getResourceAsStream(photoFile)));
 
     }
@@ -99,6 +101,7 @@ public class InterestRegions {
 
         List<Region> regions = new ArrayList<>();
         for (int j = 0; j < 40; j++) {
+            System.out.println("region " + j);
             double maxDistance = 0;
             Pair best = null;
             for (int x = 0; x < image.getWidth(); x++) {
@@ -127,19 +130,20 @@ public class InterestRegions {
             processed.addAll(region.a);
             processed.addAll(region.b);
             regions.add(region);
+
+            //for (Region regioni : regions) {
+                for (XY i : region.a) {
+                    image.setRGB(i.x, i.y, Color.RED.getRGB());
+                }
+                for (XY i : region.b) {
+                    image.setRGB(i.x, i.y, Color.GREEN.getRGB());
+                }
+            //}
+
+            String outFilesPrefix = "/home/denny/proj/bee/recognize/interest-";
+            ImageIO.write(image, "png", new File(outFilesPrefix + "5.png"));
         }
 
-        for( Region region : regions ) {
-            for (XY i : region.a) {
-                image.setRGB(i.x, i.y, Color.RED.getRGB());
-            }
-            for (XY i : region.b) {
-                image.setRGB(i.x, i.y, Color.GREEN.getRGB());
-            }
-        }
-
-        String outFilesPrefix = "/home/denny/proj/bee/recognize/interest-";
-        ImageIO.write(image, "png", new File(outFilesPrefix + "1.png"));
     }
 
     private Region getRegion(Pair best, int steps) {
