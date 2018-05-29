@@ -45,11 +45,19 @@ public class InterestRegions {
         return new Color(sum.x / set.size(), sum.y / set.size(), sum.z / set.size());
     }
 
-    boolean closestPart(Region region, XY newPoint) {
+    Boolean closestPart(int step, Region region, XY newPoint) {
         var ca = averageColor(region.a);
         var cb = averageColor(region.b);
         int rgbNew = image.getRGB(newPoint.x, newPoint.y);
-        return Colors.distance(ca.getRGB(), rgbNew) < Colors.distance(cb.getRGB(), rgbNew);
+        double distanceA = Colors.distance(ca.getRGB(), rgbNew);
+        double distanceB = Colors.distance(cb.getRGB(), rgbNew);
+        System.out.printf("step %s total dist=%s  maxAB=%s minAB=%s  a=%s b=%s\n",
+                step, (int) Colors.distance(ca.getRGB(), cb.getRGB()),
+                (int) Math.max(distanceA, distanceB),
+                (int) Math.min(distanceA, distanceB),
+                distanceA, distanceB);
+        if (Math.abs(distanceA - distanceB) < (distanceA + distanceB) / 6) return null; // can't decide definitely
+        return distanceA < distanceB;
     }
 
     XY checkBounds(XY p) {
@@ -122,16 +130,16 @@ public class InterestRegions {
         this.image = image;
         String outFilesPrefix = "/home/denny/proj/bee/recognize/interest-";
 
-        computeContrastPairs();
-        for (var p : contrastPairs.subList(0, 3000)) {
-            image.setRGB(p.a.x, p.a.y, Color.RED.getRGB());
-            image.setRGB(p.b.x, p.b.y, Color.GREEN.getRGB());
-        }
-        ImageIO.write(image, "png", new File(outFilesPrefix + "c3.png"));
+//        computeContrastPairs();
+//        for (var p : contrastPairs.subList(0, 3000)) {
+//            image.setRGB(p.a.x, p.a.y, Color.RED.getRGB());
+//            image.setRGB(p.b.x, p.b.y, Color.GREEN.getRGB());
+//        }
+//        ImageIO.write(image, "png", new File(outFilesPrefix + "c3.png"));
 
 
         List<Region> regions = new ArrayList<>();
-        for (int j = 0; j < 40; j++) {
+        for (int j = 0; j < 6; j++) {
             System.out.println("region " + j);
             double maxDistance = 0;
             Pair best = null;
@@ -184,8 +192,11 @@ public class InterestRegions {
         Set<XY> newCheckList = null;
         for (int j = 0; j < steps; j++) {
             Set<XY> plusA = new HashSet<>();
-            for (XY i : checkList) {
-                if (closestPart(region, i)) plusA.add(i);
+            for (XY xy : checkList) {
+                Boolean closest = closestPart(j, region, xy);
+                if(closest!=null) { // if decision made
+                    if (closest) plusA.add(xy);
+                }
             }
             for (XY i : checkList) {
                 if (plusA.contains(i)) {
