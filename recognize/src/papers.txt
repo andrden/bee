@@ -1,4 +1,9 @@
 
+IBM Watson identify playing card (single one, however):
+https://www.ibm.com/blogs/watson/2016/09/power-visual-recognition-use-watson-identify-hand-cards/
+
+========================================================================================================================
+
 RESIZING AN IMAGE:
 convert 9-blurry3.png -colorspace RGB -resize 5% -colorspace sRGB 9-blurry3-5pct.png
 
