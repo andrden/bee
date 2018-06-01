@@ -1,5 +1,7 @@
 package recognize;
 
+import com.google.common.collect.Sets;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -8,17 +10,49 @@ import java.util.*;
 import java.util.List;
 
 public class InterestRegions {
+    static Random rnd = new Random(0);
+
     public static void main(String[] args) throws Exception {
         String photoFile = "cards-angle45-3pct.png";
         //String photoFile = "cards-angle45.png";
         //String photoFile = "cards-angle45-5pct.png";
-        new InterestRegions(ImageIO.read(InterestRegions.class.getClassLoader().getResourceAsStream(photoFile)));
+        BufferedImage imgMini = ImageIO.read(InterestRegions.class.getClassLoader().getResourceAsStream(photoFile));
+        InterestRegions iregs = new InterestRegions(imgMini);
 
+        BufferedImage imgFull = ImageIO.read(InterestRegions.class.getClassLoader().getResourceAsStream("cards-angle45.png"));
+        for (Region r : iregs.regions) {
+            drawRegion(r, imgMini, imgFull);
+        }
+        String outFilesPrefix = "/home/denny/proj/bee/recognize/interest-";
+        ImageIO.write(imgFull, "png", new File(outFilesPrefix + "3F.png"));
+
+    }
+
+    static void drawRegion(Region region, BufferedImage imgMini, BufferedImage imgFull) {
+        Set<XY> all = Sets.union(region.a, region.b);
+        Graphics2D g = (Graphics2D) imgFull.getGraphics();
+        Color[] colors = {Color.red, Color.green, Color.blue, Color.black,
+                Color.white, Color.magenta, Color.YELLOW,
+                Color.cyan};
+        g.setColor(colors[(int) (rnd.nextDouble() * colors.length)]);
+        g.setStroke(new BasicStroke(6));
+        for (XY xy : all) {
+            int left = (xy.x + 0) * imgFull.getWidth() / imgMini.getWidth();
+            int right = (xy.x + 1) * imgFull.getWidth() / imgMini.getWidth();
+            int top = (xy.y + 0) * imgFull.getHeight() / imgMini.getHeight();
+            int bottom = (xy.y + 1) * imgFull.getHeight() / imgMini.getHeight();
+            if (!all.contains(new XY(xy.x + 1, xy.y))) g.drawLine(right, top, right, bottom);
+            if (!all.contains(new XY(xy.x - 1, xy.y))) g.drawLine(left, top, left, bottom);
+            if (!all.contains(new XY(xy.x, xy.y + 1))) g.drawLine(left, bottom, right, bottom);
+            if (!all.contains(new XY(xy.x, xy.y - 1))) g.drawLine(left, top, right, top);
+        }
     }
 
     BufferedImage image;
     Set<XY> processed = new HashSet<>();
     List<Pair> contrastPairs = new ArrayList<>();
+
+    List<Region> regions = new ArrayList<>();
 
     static class Pair {
         XY a;
@@ -45,14 +79,12 @@ public class InterestRegions {
         return new Color(sum.x / set.size(), sum.y / set.size(), sum.z / set.size());
     }
 
-    Boolean closestPart(int step, Region region, XY newPoint) {
-        var ca = averageColor(region.a);
-        var cb = averageColor(region.b);
+    Boolean closestPart(int step, Color averageA, Color averageB, XY newPoint) {
         int rgbNew = image.getRGB(newPoint.x, newPoint.y);
-        double distanceA = Colors.distance(ca.getRGB(), rgbNew);
-        double distanceB = Colors.distance(cb.getRGB(), rgbNew);
+        double distanceA = Colors.distance(averageA.getRGB(), rgbNew);
+        double distanceB = Colors.distance(averageB.getRGB(), rgbNew);
         System.out.printf("step %s total dist=%s  maxAB=%s minAB=%s  a=%s b=%s\n",
-                step, (int) Colors.distance(ca.getRGB(), cb.getRGB()),
+                step, (int) Colors.distance(averageA.getRGB(), averageB.getRGB()),
                 (int) Math.max(distanceA, distanceB),
                 (int) Math.min(distanceA, distanceB),
                 distanceA, distanceB);
@@ -65,9 +97,9 @@ public class InterestRegions {
         return null;
     }
 
-    Set<XY> checkList(Region region, XY newPoint) {
+    Map<XY, XY[]> checkList(Region region, XY newPoint) {
         boolean newA = region.a.contains(newPoint);
-        var ret = new HashSet<XY>();
+        var ret = new HashMap<XY, XY[]>();
         for (XY xy : around(newPoint)) {
             if (checkBounds(xy) == null) continue;
             if (processed.contains(xy)) continue;
@@ -75,12 +107,12 @@ public class InterestRegions {
             for (XY i : around(xy)) {
                 if (newA) {
                     if (region.b.contains(i)) {
-                        ret.add(xy);
+                        ret.put(xy, new XY[]{newPoint, i});
                         break;
                     }
                 } else {
                     if (region.a.contains(i)) {
-                        ret.add(xy);
+                        ret.put(xy, new XY[]{i, newPoint});
                         break;
                     }
                 }
@@ -138,9 +170,8 @@ public class InterestRegions {
 //        ImageIO.write(image, "png", new File(outFilesPrefix + "c3.png"));
 
 
-        List<Region> regions = new ArrayList<>();
-        for (int j = 0; j < 6; j++) {
-            System.out.println("region " + j);
+        for (int j = 0; j < 40; j++) {
+            System.out.println("===================== region " + j);
             double maxDistance = 0;
             Pair best = null;
             for (int x = 0; x < image.getWidth(); x++) {
@@ -188,35 +219,52 @@ public class InterestRegions {
         Region region = new Region();
         region.a.add(best.a);
         region.b.add(best.b);
-        Set<XY> checkList = checkList(region, best.a);
-        Set<XY> newCheckList = null;
+        Map<XY, XY[]> checkList = checkList(region, best.a);
+        Map<XY, XY[]> newCheckList = null;
         for (int j = 0; j < steps; j++) {
+            var averageA = averageColor(region.a);
+            var averageB = averageColor(region.b);
+            double regionSeparation = Colors.distance(averageA.getRGB(), averageB.getRGB());
+
             Set<XY> plusA = new HashSet<>();
-            for (XY xy : checkList) {
-                Boolean closest = closestPart(j, region, xy);
-                if(closest!=null) { // if decision made
+            for (XY xy : checkList.keySet()) {
+                Boolean closest = closestPart(j, averageA, averageB, xy);
+                if (closest != null) { // if decision made
                     if (closest) plusA.add(xy);
                 }
             }
-            for (XY i : checkList) {
+            List<XY> added = new ArrayList<>();
+            for (XY i : checkList.keySet()) {
                 if (plusA.contains(i)) {
-                    region.a.add(i);
+                    XY bPoint = checkList.get(i)[1];
+                    double edgeDistance = Colors.distance(image.getRGB(i.x, i.y), image.getRGB(bPoint.x, bPoint.y));
+                    if (edgeDistance > regionSeparation / 20) {
+                        region.a.add(i);
+                        added.add(i);
+                        System.out.println("add-a dist-b=" + edgeDistance);
+                    }
                 } else {
-                    region.b.add(i);
+                    XY aPoint = checkList.get(i)[0];
+                    double edgeDistance = Colors.distance(image.getRGB(i.x, i.y), image.getRGB(aPoint.x, aPoint.y));
+                    if (edgeDistance > regionSeparation / 10) {
+                        region.b.add(i);
+                        added.add(i);
+                        System.out.println("add-b dist-a=" + edgeDistance);
+                    }
                 }
             }
-            newCheckList = new HashSet<>();
-            for (XY i : checkList) {
-                newCheckList.addAll(checkList(region, i));
+            newCheckList = new HashMap<>();
+            for (XY i : added) {
+                newCheckList.putAll(checkList(region, i));
             }
             if (newCheckList.isEmpty()) break;
             checkList = newCheckList;
         }
-        if (steps > 0) {
-            for (XY i : newCheckList) {
-                image.setRGB(i.x, i.y, Color.YELLOW.getRGB());
-            }
-        }
+//        if (steps > 0) {
+//            for (XY i : newCheckList.keySet()) {
+//                image.setRGB(i.x, i.y, Color.YELLOW.getRGB());
+//            }
+//        }
         return region;
     }
 
