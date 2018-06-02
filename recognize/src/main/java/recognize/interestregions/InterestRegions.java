@@ -1,6 +1,9 @@
-package recognize;
+package recognize.interestregions;
 
 import com.google.common.collect.Sets;
+import recognize.Colors;
+import recognize.Point3;
+import recognize.XY;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -13,7 +16,7 @@ public class InterestRegions {
     static Random rnd = new Random(0);
 
     public static void main(String[] args) throws Exception {
-        String photoFile = "cards-angle45-3pct.png";
+        String photoFile = "cards-angle45-5pct.png";
         //String photoFile = "cards-angle45.png";
         //String photoFile = "cards-angle45-5pct.png";
         BufferedImage imgMini = ImageIO.read(InterestRegions.class.getClassLoader().getResourceAsStream(photoFile));
@@ -21,15 +24,17 @@ public class InterestRegions {
 
         BufferedImage imgFull = ImageIO.read(InterestRegions.class.getClassLoader().getResourceAsStream("cards-angle45.png"));
         for (Region r : iregs.regions) {
-            drawRegion(r, imgMini, imgFull);
+            Set<XY> enclosure = r.findEnclosure(imgMini.getWidth(), imgMini.getHeight());
+            drawRegion(enclosure, imgMini, imgFull);
+//            Set<XY> all = Sets.union(r.a, r.b);
+//            drawRegion(all, imgMini, imgFull);
         }
         String outFilesPrefix = "/home/denny/proj/bee/recognize/interest-";
-        ImageIO.write(imgFull, "png", new File(outFilesPrefix + "3F.png"));
+        ImageIO.write(imgFull, "png", new File(outFilesPrefix + "5F.png"));
 
     }
 
-    static void drawRegion(Region region, BufferedImage imgMini, BufferedImage imgFull) {
-        Set<XY> all = Sets.union(region.a, region.b);
+    static void drawRegion(Set<XY> all, BufferedImage imgMini, BufferedImage imgFull) {
         Graphics2D g = (Graphics2D) imgFull.getGraphics();
         Color[] colors = {Color.red, Color.green, Color.blue, Color.black,
                 Color.white, Color.magenta, Color.YELLOW,
@@ -53,22 +58,6 @@ public class InterestRegions {
     List<Pair> contrastPairs = new ArrayList<>();
 
     List<Region> regions = new ArrayList<>();
-
-    static class Pair {
-        XY a;
-        XY b;
-        double distance;
-
-        public Pair(XY a, XY b) {
-            this.a = a;
-            this.b = b;
-        }
-    }
-
-    class Region {
-        Set<XY> a = new HashSet<>();
-        Set<XY> b = new HashSet<>();
-    }
 
     Color averageColor(Set<XY> set) {
         Point3 sum = new Point3(0, 0, 0);
@@ -136,27 +125,27 @@ public class InterestRegions {
         return around;
     }
 
-    void computeContrastPairs() {
-        for (int x = 0; x < image.getWidth(); x++) {
-            for (int y = 0; y < image.getHeight(); y++) {
-                XY xy = new XY(x, y);
-                Pair[] pairs = {
-                        new Pair(xy, new XY(x + 1, y)),
-                        new Pair(xy, new XY(x + 1, y + 1)),
-                        new Pair(xy, new XY(x, y + 1)),
-                        new Pair(xy, new XY(x - 1, y + 1)),
-                };
-                for (var pair : pairs) {
-                    double d = colorDistance(pair);
-                    if (d >= 0) { // if in image bounds
-                        pair.distance = d;
-                        contrastPairs.add(pair);
-                    }
-                }
-            }
-        }
-        contrastPairs.sort(Comparator.comparingDouble(p -> -p.distance));
-    }
+//    void computeContrastPairs() {
+//        for (int x = 0; x < image.getWidth(); x++) {
+//            for (int y = 0; y < image.getHeight(); y++) {
+//                XY xy = new XY(x, y);
+//                Pair[] pairs = {
+//                        new Pair(xy, new XY(x + 1, y)),
+//                        new Pair(xy, new XY(x + 1, y + 1)),
+//                        new Pair(xy, new XY(x, y + 1)),
+//                        new Pair(xy, new XY(x - 1, y + 1)),
+//                };
+//                for (var pair : pairs) {
+//                    double d = colorDistance(pair);
+//                    if (d >= 0) { // if in image bounds
+//                        pair.distance = d;
+//                        contrastPairs.add(pair);
+//                    }
+//                }
+//            }
+//        }
+//        contrastPairs.sort(Comparator.comparingDouble(p -> -p.distance));
+//    }
 
     public InterestRegions(BufferedImage image) throws Exception {
         this.image = image;
@@ -210,7 +199,7 @@ public class InterestRegions {
             }
             //}
 
-            ImageIO.write(image, "png", new File(outFilesPrefix + "3.png"));
+            ImageIO.write(image, "png", new File(outFilesPrefix + "5.png"));
         }
 
     }

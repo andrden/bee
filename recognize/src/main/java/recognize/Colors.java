@@ -3,7 +3,7 @@ package recognize;
 import java.awt.*;
 
 public class Colors {
-    static double distance(int rgb1, int rgb2) {
+    public static double distance(int rgb1, int rgb2) {
         Color c1 = new Color(rgb1);
         Color c2 = new Color(rgb2);
         int dred = c1.getRed() - c2.getRed();
@@ -14,7 +14,7 @@ public class Colors {
                 Math.pow(dblue, 2));
     }
 
-    static double cosineColorVectors(int from, int to1, int to2) {
+    public static double cosineColorVectors(int from, int to1, int to2) {
         Color cfrom = new Color(from);
         Color cto1 = new Color(to1);
         Color cto2 = new Color(to2);

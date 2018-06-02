@@ -1,12 +1,13 @@
 package recognize;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class XY {
-    int x;
-    int y;
+    public int x;
+    public int y;
 
     public XY(int x, int y) {
         this.x = x;
@@ -39,8 +40,8 @@ public class XY {
                 .collect(Collectors.toList());
     }
 
-    static XY min(List<XY> list) {
-        XY ret = list.get(0).copy();
+    public static XY min(Collection<XY> list) {
+        XY ret = list.iterator().next().copy();
         for (XY p : list) {
             ret.x = Math.min(ret.x, p.x);
             ret.y = Math.min(ret.y, p.y);
@@ -48,8 +49,8 @@ public class XY {
         return ret;
     }
 
-    static XY max(List<XY> list) {
-        XY ret = list.get(0).copy();
+    public static XY max(Collection<XY> list) {
+        XY ret = list.iterator().next().copy();
         for (XY p : list) {
             ret.x = Math.max(ret.x, p.x);
             ret.y = Math.max(ret.y, p.y);
