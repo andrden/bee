@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Curve {
-    List<XY> curveLocation;
+    public List<XY> curveLocation;
     List<XY> curveRescaled;
     int[] lines;
 

@@ -15,12 +15,12 @@ public class CurvesExtractor {
     int histH;
     Map<XY, Histogram> histograms = new HashMap<>();
 
-    Map<XY, XY> aroundRed = new HashMap<>(); // XY -> shifted XY, where red shift is most pronounced
+    public Map<XY, XY> aroundRed = new HashMap<>(); // XY -> shifted XY, where red shift is most pronounced
     //Set<XY> aroundRedAvg = new HashSet<>();
     Index index;
 
     Set<XY> excludedByCurves = new HashSet<>();
-    List<Curve> finalCurves = new ArrayList<>();
+    public List<Curve> finalCurves = new ArrayList<>();
 
     public CurvesExtractor(String name, BufferedImage image) {
         this(name, image, 1);
@@ -32,31 +32,15 @@ public class CurvesExtractor {
         this.histogramsGrid=histogramsGrid;
         buildHistograms(histogramsGrid);
 
-        for (int x = 0; x < image.getWidth(); x++) {
-            for (int y = 0; y < image.getHeight(); y++) {
-                Histogram histogram = getHistogramForPoint(x, y);
-                int minimumStep; // lesser steps ignored
-                double minCosine = 0.75;
-                if (histogram.hasBorder() && x > 0 && y > 0 && x < image.getWidth() - 1 && y < image.getHeight() - 1) {
-                    final int rgb = image.getRGB(x, y);
-                    final double fromRed = Colors.distance(Color.red.getRGB(), rgb);
-                    double[] around = Arrays.stream(colourAround(x, y))
-                            .mapToDouble(c -> Colors.distance(Color.red.getRGB(), c))
-                            .toArray();
-                    if (!histogram.isEdge(fromRed, around)) {
-                        continue;
-                    }
-                    minimumStep = 0; // less strict checks because there is already indication that this is an edge point
-                    minCosine = 0.1;
-                } else {
-                    minimumStep = 16;
-                }
-                XY bestStep = findBestStep(image, x, y, minimumStep, minCosine);
-                if (bestStep != null) {
-                    aroundRed.put(new XY(x, y), bestStep);
-                }
-            }
-        }
+        computeAroundRed();
+        extract();
+    }
+
+    public CurvesExtractor(BufferedImage image) {
+        this.image = image;
+    }
+
+    public void extract() {
         index = new Index(aroundRed.keySet());
 //        computeAvg();
         List<List<XY>> curves = new ArrayList<>();
@@ -66,7 +50,7 @@ public class CurvesExtractor {
             System.out.println("======================");
             curves.add(curve);
             //curve.forEach(p -> excludedByCurves.addAll(index.around(p)));
-            curve.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
+            //curve.forEach(p -> image.setRGB(p.x, p.y, Color.green.getRGB()));
         }
 
         for (int ci = 0; ci < curves.size(); ci++) {
@@ -94,7 +78,38 @@ public class CurvesExtractor {
             }
             finalCurves.add(new Curve(curveLocation, curve, lines));
         }
+    }
 
+    private void computeAroundRed() {
+        for (int x = 0; x < image.getWidth(); x++) {
+            for (int y = 0; y < image.getHeight(); y++) {
+                Histogram histogram = getHistogramForPoint(x, y);
+                computeAroundRed(x, y, histogram);
+            }
+        }
+    }
+
+    public void computeAroundRed(int x, int y, Histogram histogram) {
+        int minimumStep; // lesser steps ignored
+        double minCosine = 0.75;
+        if (histogram.hasBorder() && x > 0 && y > 0 && x < image.getWidth() - 1 && y < image.getHeight() - 1) {
+            final int rgb = image.getRGB(x, y);
+            final double fromRed = Colors.distance(Color.red.getRGB(), rgb);
+            double[] around = Arrays.stream(colourAround(x, y))
+                    .mapToDouble(c -> Colors.distance(Color.red.getRGB(), c))
+                    .toArray();
+            if (!histogram.isEdge(fromRed, around)) {
+                return;
+            }
+            minimumStep = 0; // less strict checks because there is already indication that this is an edge point
+            minCosine = 0.1;
+        } else {
+            minimumStep = 16;
+        }
+        XY bestStep = findBestStep(image, x, y, minimumStep, minCosine);
+        if (bestStep != null) {
+            aroundRed.put(new XY(x, y), bestStep);
+        }
     }
 
     int[] colourAround(int x, int y) {

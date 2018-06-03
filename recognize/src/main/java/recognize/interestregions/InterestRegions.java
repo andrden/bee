@@ -1,6 +1,5 @@
 package recognize.interestregions;
 
-import com.google.common.collect.Sets;
 import recognize.Colors;
 import recognize.Point3;
 import recognize.XY;
@@ -25,7 +24,9 @@ public class InterestRegions {
         BufferedImage imgFull = ImageIO.read(InterestRegions.class.getClassLoader().getResourceAsStream("cards-angle45.png"));
         for (Region r : iregs.regions) {
             Set<XY> enclosure = r.findEnclosure(imgMini.getWidth(), imgMini.getHeight());
-            drawRegion(enclosure, imgMini, imgFull);
+            r.extractCurves(imgFull);
+            //drawRegion(enclosure, imgMini, imgFull);
+
 //            Set<XY> all = Sets.union(r.a, r.b);
 //            drawRegion(all, imgMini, imgFull);
         }

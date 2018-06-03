@@ -1,18 +1,71 @@
 package recognize.interestregions;
 
 import com.google.common.collect.Sets;
-import recognize.XY;
+import recognize.*;
 
-import java.util.ArrayList;
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 class Region {
     Set<XY> a = new HashSet<>();
     Set<XY> b = new HashSet<>();
 
+    int imgMiniWidth;
+    int imgMiniHeight;
+    Set<XY> enclosure;
+
+    void extractCurves(BufferedImage imgFull){
+        Histogram histogram = histogram(imgFull);
+        CurvesExtractor curvesExtractor = new CurvesExtractor(imgFull);
+        for (XY xy : enclosure) {
+            int left = (xy.x + 0) * imgFull.getWidth() / imgMiniWidth;
+            int right = (xy.x + 1) * imgFull.getWidth() / imgMiniWidth;
+            int top = (xy.y + 0) * imgFull.getHeight() / imgMiniHeight;
+            int bottom = (xy.y + 1) * imgFull.getHeight() / imgMiniHeight;
+            for (int x = left; x < right; x++) {
+                for (int y = top; y < bottom; y++) {
+                    curvesExtractor.computeAroundRed(x,y, histogram);
+                }
+            }
+        }
+        curvesExtractor.extract();
+//        curvesExtractor.aroundRed.keySet().forEach(p -> {
+//            imgFull.setRGB(p.x, p.y, Color.blue.getRGB());
+//        });
+        for (int ci = 0; ci < curvesExtractor.finalCurves.size(); ci++) {
+            var curve = curvesExtractor.finalCurves.get(ci);
+            //Images.drawPolygon(imgFull, curve.curveLocation, Color.yellow);
+            Images.fillPolygon(imgFull, curve.curveLocation, Color.yellow);
+        }
+    }
+
+    Histogram histogram(BufferedImage imgFull) {
+        Histogram h = new Histogram();
+        for (XY xy : enclosure) {
+            int left = (xy.x + 0) * imgFull.getWidth() / imgMiniWidth;
+            int right = (xy.x + 1) * imgFull.getWidth() / imgMiniWidth;
+            int top = (xy.y + 0) * imgFull.getHeight() / imgMiniHeight;
+            int bottom = (xy.y + 1) * imgFull.getHeight() / imgMiniHeight;
+            for (int x = left; x < right; x++) {
+                for (int y = top; y < bottom; y++) {
+                    double fromRed = Colors.distance(Color.red.getRGB(), imgFull.getRGB(x, y));
+                    h.add(fromRed);
+                }
+            }
+        }
+        h.finish();
+        return h;
+    }
+
     Set<XY> findEnclosure(int imgWidth, int imgHeight) {
+        this.imgMiniWidth = imgWidth;
+        this.imgMiniHeight = imgHeight;
+
         Set<XY> all = Sets.union(a, b);
         XY min = XY.min(all);
         XY max = XY.max(all);
@@ -47,7 +100,8 @@ class Region {
             scan = newScan;
         }
 
-        return Sets.difference(boundingBox, outer);
+        enclosure = Sets.difference(boundingBox, outer);
+        return enclosure;
     }
 
     void add(Set<XY> all, XY p, Set<XY> scan, Set<XY> outer) {

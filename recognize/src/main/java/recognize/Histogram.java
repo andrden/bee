@@ -14,7 +14,7 @@ public class Histogram {
 //    private int minPos;
     List<Integer> separators = new ArrayList<>();
 
-    void add(double distanceFromRed) {
+    public void add(double distanceFromRed) {
         //int idx = getIdx(distanceFromRed);
         int idx = (int) distanceFromRed;
         histFine[idx]++;
@@ -41,7 +41,7 @@ public class Histogram {
         return (int) (hist.length * (distanceFromRed - minRange) / (maxRange - minRange));
     }
 
-    void finish() {
+    public void finish() {
         summarize();
         for (int i = 0; i < hist.length; i++) {
             System.out.println("Histogram " + i + " " + hist[i]);

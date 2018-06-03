@@ -6,7 +6,7 @@ import java.util.List;
 
 public class Images {
 
-    static void fillPolygon(BufferedImage image, List<XY> curve, Color color) {
+    public static void fillPolygon(BufferedImage image, List<XY> curve, Color color) {
         Graphics2D g = image.createGraphics();
         g.setColor(color);
         g.setPaint(color);
@@ -15,7 +15,7 @@ public class Images {
         g.fillPolygon(p);
     }
 
-    static void drawPolygon(BufferedImage image, List<XY> curve, Color color) {
+    public static void drawPolygon(BufferedImage image, List<XY> curve, Color color) {
         Graphics2D g = image.createGraphics();
         g.setColor(color);
         g.setPaint(color);
