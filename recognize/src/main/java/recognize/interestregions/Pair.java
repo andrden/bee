@@ -1,6 +1,6 @@
 package recognize.interestregions;
 
-import recognize.XY;
+import recognize.util.XY;
 
 class Pair {
     XY a;

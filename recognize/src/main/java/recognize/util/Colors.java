@@ -1,4 +1,4 @@
-package recognize;
+package recognize.util;
 
 import java.awt.*;
 

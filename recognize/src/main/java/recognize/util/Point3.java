@@ -1,4 +1,4 @@
-package recognize;
+package recognize.util;
 
 public class Point3 {
     public int x;

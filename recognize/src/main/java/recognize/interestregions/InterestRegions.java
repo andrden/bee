@@ -1,8 +1,10 @@
 package recognize.interestregions;
 
-import recognize.Colors;
-import recognize.Point3;
-import recognize.XY;
+import recognize.CurvesExtractor;
+import recognize.KnownCurves;
+import recognize.util.Colors;
+import recognize.util.Point3;
+import recognize.util.XY;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -15,6 +17,8 @@ public class InterestRegions {
     static Random rnd = new Random(0);
 
     public static void main(String[] args) throws Exception {
+        KnownCurves knownCurves = new KnownCurves();
+
         String photoFile = "cards-angle45-5pct.png";
         //String photoFile = "cards-angle45.png";
         //String photoFile = "cards-angle45-5pct.png";
@@ -30,7 +34,16 @@ public class InterestRegions {
 //            Set<XY> all = Sets.union(r.a, r.b);
 //            drawRegion(all, imgMini, imgFull);
         }
-        String outFilesPrefix = "/home/denny/proj/bee/recognize/interest-";
+
+        for (Region r : iregs.regions) {
+            CurvesExtractor curvesExtractor = r.getCurvesExtractor();
+            for (int ci = 0; ci < curvesExtractor.finalCurves.size(); ci++) {
+                var curve = curvesExtractor.finalCurves.get(ci);
+                knownCurves.recognize("ci="+ci, curve);
+            }
+        }
+
+            String outFilesPrefix = "/home/denny/proj/bee/recognize/interest-";
         ImageIO.write(imgFull, "png", new File(outFilesPrefix + "5F.png"));
 
     }

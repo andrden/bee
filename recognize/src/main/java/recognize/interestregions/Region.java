@@ -2,14 +2,14 @@ package recognize.interestregions;
 
 import com.google.common.collect.Sets;
 import recognize.*;
+import recognize.util.Colors;
+import recognize.util.Images;
+import recognize.util.XY;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 class Region {
     Set<XY> a = new HashSet<>();
@@ -19,9 +19,11 @@ class Region {
     int imgMiniHeight;
     Set<XY> enclosure;
 
+    CurvesExtractor curvesExtractor;
+
     void extractCurves(BufferedImage imgFull){
         Histogram histogram = histogram(imgFull);
-        CurvesExtractor curvesExtractor = new CurvesExtractor(imgFull);
+        curvesExtractor = new CurvesExtractor(imgFull);
         for (XY xy : enclosure) {
             int left = (xy.x + 0) * imgFull.getWidth() / imgMiniWidth;
             int right = (xy.x + 1) * imgFull.getWidth() / imgMiniWidth;
@@ -42,6 +44,10 @@ class Region {
             //Images.drawPolygon(imgFull, curve.curveLocation, Color.yellow);
             Images.fillPolygon(imgFull, curve.curveLocation, Color.yellow);
         }
+    }
+
+    public CurvesExtractor getCurvesExtractor() {
+        return curvesExtractor;
     }
 
     Histogram histogram(BufferedImage imgFull) {

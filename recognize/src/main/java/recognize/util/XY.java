@@ -1,4 +1,4 @@
-package recognize;
+package recognize.util;
 
 import java.util.Collection;
 import java.util.List;
@@ -14,25 +14,25 @@ public class XY {
         this.y = y;
     }
 
-    void add(XY p) {
+    public void add(XY p) {
         x += p.x;
         y += p.y;
     }
 
-    XY copy() {
+    public XY copy() {
         return new XY(x, y);
     }
 
-    XY subtract(XY p) {
+    public XY subtract(XY p) {
         return new XY(x - p.x, y - p.y);
     }
 
-    XY rotateRight(double alpha) {
+    public XY rotateRight(double alpha) {
         return new XY((int) (x * Math.cos(alpha) + y * Math.sin(alpha)),
                 (int) (-x * Math.sin(alpha) + y * Math.cos(alpha)));
     }
 
-    static List<XY> rescaleHeight(List<XY> curve, int newH) {
+    public static List<XY> rescaleHeight(List<XY> curve, int newH) {
         XY min = min(curve);
         XY max = max(curve);
         return curve.stream()
@@ -58,7 +58,7 @@ public class XY {
         return ret;
     }
 
-    static XY average(List<XY> list) {
+    public static XY average(List<XY> list) {
         XY psum = new XY(0, 0);
         list.forEach(psum::add);
         return new XY(psum.x / list.size(), psum.y / list.size());
@@ -72,23 +72,23 @@ public class XY {
         return y;
     }
 
-    XY vectorTurnLeft90() {
+    public XY vectorTurnLeft90() {
         return new XY(-y, x);
     }
 
-    XY vectorTurnLeft90(XY direction) {
+    public XY vectorTurnLeft90(XY direction) {
         return new XY(x - (direction.y - y), y + (direction.x - x));
     }
 
-    double distanceSq(XY p) {
+    public double distanceSq(XY p) {
         return Math.pow(x - p.x, 2) + Math.pow(y - p.y, 2);
     }
 
-    double scalarMult(XY v) {
+    public double scalarMult(XY v) {
         return x * v.x + y * v.y;
     }
 
-    XY shiftBy(int step, double phi) {
+    public XY shiftBy(int step, double phi) {
         XY p = new XY(x + (int) (step * Math.cos(phi)), y + (int) (step * Math.sin(phi)));
         return p;
     }
@@ -97,7 +97,7 @@ public class XY {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        XY XY = (recognize.XY) o;
+        XY XY = (recognize.util.XY) o;
         return x == XY.x &&
                 y == XY.y;
     }

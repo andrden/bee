@@ -1,4 +1,6 @@
-package recognize;
+package recognize.other;
+
+import recognize.util.XY;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -6,7 +8,7 @@ import java.util.stream.Collectors;
 public class Inertia {
     List<XY> curve;
     XY center;
-    double alpha;
+    public double alpha;
 
     public Inertia(List<XY> curve) {
         this.curve = curve;
@@ -15,7 +17,7 @@ public class Inertia {
         alpha = Math.atan2(2*inertiaAroundXY(), inertiaAroundY()-inertiaAroundX())/2;
     }
 
-    List<XY> alignedCurve(){
+    public List<XY> alignedCurve(){
         return curve.stream()
                 .map(p -> p.subtract(center))
                 .map(p -> p.rotateRight(alpha))

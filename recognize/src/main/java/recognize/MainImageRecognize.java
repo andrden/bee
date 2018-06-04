@@ -1,6 +1,9 @@
 package recognize;
 
 import com.google.common.collect.HashMultiset;
+import recognize.util.Colors;
+import recognize.util.Images;
+import recognize.util.XY;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -22,11 +25,7 @@ public class MainImageRecognize {
     BufferedImage image;
 
     void run() throws Exception {
-        List<CurvesExtractor> known = new ArrayList<>();
-        for (var n : asList("diamonds", "hearts", "9")) {
-            known.add(new CurvesExtractor(n, ImageIO.read(getClass().getClassLoader().getResourceAsStream("cards/" + n + ".png"))));
-        }
-
+        KnownCurves knownCurves = new KnownCurves();
         //String photoFile = "cards-crop1.png";
         String photoFile = "cards-angle45.png";
         image = ImageIO.read(getClass().getClassLoader().getResourceAsStream(photoFile));
@@ -62,8 +61,7 @@ public class MainImageRecognize {
             }
             String fname = "sub" + ci + ".png";
             ImageIO.write(sub, "png", new File(outFilesPrefix + fname));
-            var knownDistances = known.stream().collect(Collectors.toMap(k -> k.name, k -> k.finalCurves.get(0).profileDistance(curve)));
-            known.forEach(k -> System.out.println(fname + " distance " + k.name + " " + knownDistances.get(k.name).intValue()));
+            knownCurves.recognize(fname, curve);
 
             Images.drawPolygon(image, curve.curveLocation, Color.yellow);
 //            if( min(knownDistances).equals("hearts") ) {
