@@ -1,4 +1,4 @@
-package recognize.other;
+package recognize.util;
 
 import recognize.util.XY;
 
@@ -18,9 +18,13 @@ public class Inertia {
     }
 
     public List<XY> alignedCurve(){
+        return rotatedCurve(alpha);
+    }
+
+    public List<XY> rotatedCurve(double angle){
         return curve.stream()
                 .map(p -> p.subtract(center))
-                .map(p -> p.rotateRight(alpha))
+                .map(p -> p.rotateRight(angle))
                 .collect(Collectors.toList());
     }
 

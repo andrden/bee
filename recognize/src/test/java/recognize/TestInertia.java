@@ -1,7 +1,7 @@
 package recognize;
 
 import org.junit.jupiter.api.Test;
-import recognize.other.Inertia;
+import recognize.util.Inertia;
 import recognize.util.XY;
 
 import java.util.List;

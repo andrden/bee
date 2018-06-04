@@ -3,6 +3,7 @@ package recognize.interestregions;
 import com.google.common.collect.Sets;
 import recognize.*;
 import recognize.util.Colors;
+import recognize.util.Curve;
 import recognize.util.Images;
 import recognize.util.XY;
 
@@ -39,6 +40,9 @@ class Region {
 //        curvesExtractor.aroundRed.keySet().forEach(p -> {
 //            imgFull.setRGB(p.x, p.y, Color.blue.getRGB());
 //        });
+    }
+
+    void drawCurves(BufferedImage imgFull, Color color) {
         for (int ci = 0; ci < curvesExtractor.finalCurves.size(); ci++) {
             var curve = curvesExtractor.finalCurves.get(ci);
             //Images.drawPolygon(imgFull, curve.curveLocation, Color.yellow);

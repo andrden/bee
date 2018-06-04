@@ -47,6 +47,7 @@ public class TestRedShape {
 
         BufferedImage img = ImageIO.read(getClass().getClassLoader().getResourceAsStream(f));
         var c = new CurvesExtractor("", img);
+        c.extract();
         Histogram histogram = histo(c.histograms);
         for (int x = 0; x < img.getWidth(); x++) {
             for (int y = 0; y < img.getHeight(); y++) {
@@ -119,6 +120,7 @@ public class TestRedShape {
         ImageIO.write(colors, "png", new File(dir, xline + file + ".colors.png"));
 
         var c = new CurvesExtractor("", img);
+        c.extract();
         for (int y = 0; y < img.getHeight(); y++) {
             img.setRGB(xline, y, Color.gray.getRGB());
         }

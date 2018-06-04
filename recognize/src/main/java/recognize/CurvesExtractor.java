@@ -31,11 +31,10 @@ public class CurvesExtractor {
     public CurvesExtractor(String name, BufferedImage image, int histogramsGrid) {
         this.name = name;
         this.image = image;
-        this.histogramsGrid=histogramsGrid;
+        this.histogramsGrid = histogramsGrid;
         buildHistograms(histogramsGrid);
 
         computeAroundRed();
-        extract();
     }
 
     public CurvesExtractor(BufferedImage image) {
@@ -43,6 +42,10 @@ public class CurvesExtractor {
     }
 
     public void extract() {
+        extract(false);
+    }
+
+    public void extract(boolean withRotations) {
         index = new Index(aroundRed.keySet());
 //        computeAvg();
         List<List<XY>> curves = new ArrayList<>();
@@ -57,28 +60,34 @@ public class CurvesExtractor {
 
         for (int ci = 0; ci < curves.size(); ci++) {
             var curve = curves.get(ci);
-            var curveLocation = curve;
-            //curve = new Inertia(curve).alignedCurve();
             XY curveMin = XY.min(curve);
             XY curveMax = XY.max(curve);
             if (curveMax.x - curveMin.x < 20) continue;
 
-            curve = XY.rescaleHeight(curve, 100);
-            curveMin = XY.min(curve);
-            curveMax = XY.max(curve);
-
-            int width = curveMax.x - curveMin.x + 1;
-            BufferedImage sub = new BufferedImage(2 * width, curveMax.y - curveMin.y + 1, image.getType());
-            Images.fillPolygon(sub, curve, Color.red);
-            int[] lines = new int[100];
-            for (int line = 0; line < 100; line++) {
-                int count = 0;
-                for (int x = 0; x < width; x++) {
-                    if (sub.getRGB(x, line) == Color.red.getRGB()) count++;
+            var curveLocation = curve;
+            for (double angle = 0; angle < Math.PI * 2; angle += Math.PI * 2 / 36) {
+                //curve = new Inertia(curve).alignedCurve();
+                if(angle!=0){
+                    curve = new Inertia(curveLocation).rotatedCurve(angle);
                 }
-                lines[line] = count;
+                curve = XY.rescaleHeight(curve, 100);
+                curveMin = XY.min(curve);
+                curveMax = XY.max(curve);
+
+                int width = curveMax.x - curveMin.x + 1;
+                BufferedImage sub = new BufferedImage(2 * width, curveMax.y - curveMin.y + 1, image.getType());
+                Images.fillPolygon(sub, curve, Color.red);
+                int[] lines = new int[100];
+                for (int line = 0; line < 100; line++) {
+                    int count = 0;
+                    for (int x = 0; x < width; x++) {
+                        if (sub.getRGB(x, line) == Color.red.getRGB()) count++;
+                    }
+                    lines[line] = count;
+                }
+                finalCurves.add(new Curve(curveLocation, curve, lines));
+                if (!withRotations) break;
             }
-            finalCurves.add(new Curve(curveLocation, curve, lines));
         }
     }
 

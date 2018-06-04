@@ -33,6 +33,7 @@ public class MainImageRecognize {
         System.out.println(image.getWidth() + " x " + image.getHeight());
 
         CurvesExtractor curvesExtractor = new CurvesExtractor("", image, 3);
+        curvesExtractor.extract();
         curvesExtractor.aroundRed.keySet().forEach(p -> {
             image.setRGB(p.x, p.y, Color.blue.getRGB());
         });

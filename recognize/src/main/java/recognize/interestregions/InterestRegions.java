@@ -3,6 +3,7 @@ package recognize.interestregions;
 import recognize.CurvesExtractor;
 import recognize.KnownCurves;
 import recognize.util.Colors;
+import recognize.util.Images;
 import recognize.util.Point3;
 import recognize.util.XY;
 
@@ -29,6 +30,7 @@ public class InterestRegions {
         for (Region r : iregs.regions) {
             Set<XY> enclosure = r.findEnclosure(imgMini.getWidth(), imgMini.getHeight());
             r.extractCurves(imgFull);
+            //r.drawCurves(imgFull, Color.YELLOW);
             //drawRegion(enclosure, imgMini, imgFull);
 
 //            Set<XY> all = Sets.union(r.a, r.b);
@@ -39,13 +41,19 @@ public class InterestRegions {
             CurvesExtractor curvesExtractor = r.getCurvesExtractor();
             for (int ci = 0; ci < curvesExtractor.finalCurves.size(); ci++) {
                 var curve = curvesExtractor.finalCurves.get(ci);
-                knownCurves.recognize("ci="+ci, curve);
+                String type = knownCurves.recognize("ci=" + ci, curve);
+                if("hearts".equals(type)){
+                //if("diamonds".equals(type)){
+                //if("9".equals(type)){
+                    Images.fillPolygon(imgFull, curve.curveLocation, Color.green);
+                }else {
+                    Images.fillPolygon(imgFull, curve.curveLocation, Color.yellow);
+                }
             }
         }
 
-            String outFilesPrefix = "/home/denny/proj/bee/recognize/interest-";
+        String outFilesPrefix = "/home/denny/proj/bee/recognize/interest-";
         ImageIO.write(imgFull, "png", new File(outFilesPrefix + "5F.png"));
-
     }
 
     static void drawRegion(Set<XY> all, BufferedImage imgMini, BufferedImage imgFull) {
