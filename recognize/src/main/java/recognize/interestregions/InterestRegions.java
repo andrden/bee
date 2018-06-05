@@ -42,16 +42,18 @@ public class InterestRegions {
             for (int ci = 0; ci < curvesExtractor.finalCurves.size(); ci++) {
                 var curve = curvesExtractor.finalCurves.get(ci);
                 String type = knownCurves.recognize("ci=" + ci, curve);
-                if("hearts".equals(type)){
-                //if("diamonds".equals(type)){
-                //if("9".equals(type)){
-                    Images.fillPolygon(imgFull, curve.curveLocation, Color.green);
-                }else {
+
+                if ("diamonds".equals(type)) {
+                    Images.fillPolygon(imgFull, curve.curveLocation, Color.orange);
+                } else if ("hearts".equals(type)) {
                     Images.fillPolygon(imgFull, curve.curveLocation, Color.yellow);
+                } else if ("9".equals(type)) {
+                    Images.fillPolygon(imgFull, curve.curveLocation, Color.green);
+                } else if ("8".equals(type)) {
+                    Images.fillPolygon(imgFull, curve.curveLocation, Color.darkGray);
                 }
             }
         }
-
         String outFilesPrefix = "/home/denny/proj/bee/recognize/interest-";
         ImageIO.write(imgFull, "png", new File(outFilesPrefix + "5F.png"));
     }

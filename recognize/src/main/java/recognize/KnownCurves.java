@@ -14,7 +14,7 @@ public class KnownCurves {
     List<CurvesExtractor> known = new ArrayList<>();
 
     public KnownCurves() {
-        for (var n : asList("diamonds", "hearts", "9")) {
+        for (var n : asList("diamonds", "hearts", "9", "8")) {
             try {
                 CurvesExtractor e = new CurvesExtractor(n, ImageIO.read(getClass().getClassLoader().getResourceAsStream(
                         "cards/" + n + ".png")));

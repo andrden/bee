@@ -65,7 +65,7 @@ public class CurvesExtractor {
             if (curveMax.x - curveMin.x < 20) continue;
 
             var curveLocation = curve;
-            for (double angle = 0; angle < Math.PI * 2; angle += Math.PI * 2 / 36) {
+            for (double angle = 0; angle < Math.PI * 2; angle += Math.PI * 2 / 360) {
                 //curve = new Inertia(curve).alignedCurve();
                 if(angle!=0){
                     curve = new Inertia(curveLocation).rotatedCurve(angle);
