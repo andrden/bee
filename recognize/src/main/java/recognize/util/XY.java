@@ -32,6 +32,12 @@ public class XY {
                 (int) (-x * Math.sin(alpha) + y * Math.cos(alpha)));
     }
 
+    public static List<XY> shift(List<XY> curve, XY by) {
+        return curve.stream()
+                .map(p -> new XY(p.x + by.x, p.y + by.y))
+                .collect(Collectors.toList());
+    }
+
     public static List<XY> rescaleHeight(List<XY> curve, int newH) {
         XY min = min(curve);
         XY max = max(curve);

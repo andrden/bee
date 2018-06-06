@@ -41,7 +41,7 @@ public class InterestRegions {
             CurvesExtractor curvesExtractor = r.getCurvesExtractor();
             for (int ci = 0; ci < curvesExtractor.finalCurves.size(); ci++) {
                 var curve = curvesExtractor.finalCurves.get(ci);
-                String type = knownCurves.recognize("ci=" + ci, curve);
+                String type = knownCurves.recognize("ci=" + ci, curve).get(0).name;
 
                 if ("diamonds".equals(type)) {
                     Images.fillPolygon(imgFull, curve.curveLocation, Color.orange);

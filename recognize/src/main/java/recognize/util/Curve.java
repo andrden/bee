@@ -1,5 +1,7 @@
 package recognize.util;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.List;
 
@@ -23,5 +25,11 @@ public class Curve {
             sum += Math.pow(lines[i] - other.lines[i], 2);
         }
         return Math.sqrt(sum / lines.length);
+    }
+
+    public void drawDescriptorLines(BufferedImage img, XY origin) {
+        for (int line = 0; line < 100; line++) {
+            Images.line(img, new XY(origin.x, origin.y + line), new XY(origin.x + lines[line], origin.y + line), Color.lightGray);
+        }
     }
 }

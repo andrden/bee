@@ -51,9 +51,10 @@ public class MainImageRecognize {
             int width = curveMax.x - curveMin.x + 1;
             BufferedImage sub = new BufferedImage(2 * width, curveMax.y - curveMin.y + 1, image.getType());
             Images.fillPolygon(sub, curve.curveRescaled, Color.red);
-            for (int line = 0; line < 100; line++) {
-                line(sub, new XY(width, line), new XY(width + curve.lines[line], line), Color.lightGray);
-            }
+            curve.drawDescriptorLines(sub, new XY(width,0));
+//            for (int line = 0; line < 100; line++) {
+//                Images.line(sub, new XY(width, line), new XY(width + curve.lines[line], line), Color.lightGray);
+//            }
             //            for (int i = 1; i < curve.size(); i++) {
 //                line(sub, curve.get(i - 1).subtract(curveMin), curve.get(i).subtract(curveMin), Color.red);
 //            }
@@ -85,19 +86,6 @@ public class MainImageRecognize {
     String min(Map<String, Double> map) {
         return map.entrySet().stream().sorted(Comparator.comparingDouble(Map.Entry::getValue)).map(Map.Entry::getKey).findFirst().get();
     }
-
-
-    void line(BufferedImage image, XY from, XY to, Color color) {
-        Graphics2D g = image.createGraphics();
-        g.setColor(color);
-        BasicStroke bs = new BasicStroke(1);
-        g.setStroke(bs);
-        g.drawLine(from.x, from.y, to.x, to.y);
-        //        for( int i=0; i<=points; i++){
-//
-//        }
-    }
-
 
     private void displayRedGrayScaledSteps(BufferedImage image) throws IOException {
         var multiset = HashMultiset.create();

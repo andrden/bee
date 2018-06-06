@@ -24,4 +24,16 @@ public class Images {
         g.drawPolygon(p);
     }
 
+    public static void line(BufferedImage image, XY from, XY to, Color color) {
+        Graphics2D g = image.createGraphics();
+        g.setColor(color);
+        BasicStroke bs = new BasicStroke(1);
+        g.setStroke(bs);
+        g.drawLine(from.x, from.y, to.x, to.y);
+        //        for( int i=0; i<=points; i++){
+//
+//        }
+    }
+
+
 }
