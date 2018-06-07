@@ -13,6 +13,12 @@ def lab(path):
     return 'hearts'
   if 'spades' in path:
     return 'spades'
+  if 'clubs' in path:
+    return 'clubs'
+  if 'four' in path:
+    return 'four'
+  if 'five' in path:
+    return 'five'
   if 'eight' in path:
     return 'eight'
   if 'nine' in path:

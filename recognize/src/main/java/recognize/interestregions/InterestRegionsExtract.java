@@ -22,8 +22,8 @@ public class InterestRegionsExtract {
 //        BufferedImage imgMini = ImageIO.read(InterestRegionsExtract.class.getClassLoader().getResourceAsStream(photoFile));
 //        BufferedImage imgFull = ImageIO.read(InterestRegionsExtract.class.getClassLoader().getResourceAsStream(photoFileFull));
 
-        BufferedImage imgMini = ImageIO.read(new File("/home/denny/Pictures/watson-test1-5pct.png"));
-        BufferedImage imgFull = ImageIO.read(new File("/home/denny/Pictures/watson-test1.JPG"));
+        BufferedImage imgMini = ImageIO.read(new File("/home/denny/Pictures/IMG_20180515_204247-8pct.png"));
+        BufferedImage imgFull = ImageIO.read(new File("/home/denny/Pictures/IMG_20180515_204247.jpg"));
 
 
         InterestRegions iregs = new InterestRegions(imgMini);
@@ -34,7 +34,7 @@ public class InterestRegionsExtract {
             ImageIO.write(
                     r.getSubImage(imgMini.getWidth(), imgMini.getHeight(), imgFull),
                     "png",
-                    new File("/home/denny/Pictures/regionsOut/c2-" + regNo + ".png"));
+                    new File("/home/denny/Pictures/regionsOut/c6-" + regNo + ".png"));
         }
     }
 
