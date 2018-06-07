@@ -22,7 +22,7 @@ class Region {
 
     CurvesExtractor curvesExtractor;
 
-    void extractCurves(BufferedImage imgFull){
+    void extractCurves(BufferedImage imgFull) {
         Histogram histogram = histogram(imgFull);
         curvesExtractor = new CurvesExtractor(imgFull);
         for (XY xy : enclosure) {
@@ -32,7 +32,7 @@ class Region {
             int bottom = (xy.y + 1) * imgFull.getHeight() / imgMiniHeight;
             for (int x = left; x < right; x++) {
                 for (int y = top; y < bottom; y++) {
-                    curvesExtractor.computeAroundRed(x,y, histogram);
+                    curvesExtractor.computeAroundRed(x, y, histogram);
                 }
             }
         }
@@ -70,6 +70,23 @@ class Region {
         }
         h.finish();
         return h;
+    }
+
+    Rectangle getBounds() {
+        Set<XY> all = Sets.union(a, b);
+        XY min = XY.min(all);
+        XY max = XY.max(all);
+        return new Rectangle(min.x, min.y, max.x - min.x + 1, max.y - min.y + 1);
+    }
+
+    BufferedImage getSubImage(int imgMiniWidth, int imgMiniHeight, BufferedImage imgFull) {
+        Rectangle bounds = getBounds();
+        return imgFull.getSubimage(
+                bounds.x*imgFull.getWidth() / imgMiniWidth,
+                bounds.y*imgFull.getHeight() / imgMiniHeight,
+                bounds.width*imgFull.getWidth() / imgMiniWidth,
+                bounds.height*imgFull.getHeight() / imgMiniHeight
+                );
     }
 
     Set<XY> findEnclosure(int imgWidth, int imgHeight) {

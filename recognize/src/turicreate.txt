@@ -1,0 +1,20 @@
+
+========================================================================================================================
+ImageMagick rotate with background filling:
+
+convert hearts.png -virtual-pixel edge -distort SRT 80 80-hearts.png
+for i in {1..35} ; do  convert spades4.png -virtual-pixel edge -distort SRT ${i}0 ${i}0-spades4.png ; done
+
+NOTE: image must be cropped with some background at the edge or '-virtual-pixel edge' may create artifacts
+
+Actually, it doesn't work: adding many rotated images causes training to fail:
+
+TERMINATED: Terminated due to numerical difficulties.
+This model may not be ideal. To improve it, consider doing one of the following:
+(a) Increasing the regularization.
+(b) Standardizing the input data.
+(c) Removing highly correlated features.
+(d) Removing `inf` and `NaN` values in the training data.
+
+
+========================================================================================================================
