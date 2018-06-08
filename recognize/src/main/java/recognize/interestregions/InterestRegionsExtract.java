@@ -14,17 +14,20 @@ import java.io.File;
 import java.util.*;
 import java.util.List;
 
+import static recognize.interestregions.InterestRegions.drawRegion;
+
 public class InterestRegionsExtract {
 
     public static void main(String[] args) throws Exception {
+        File dir = new File("/home/denny/Pictures/regionsOut");
+
 //        String photoFile = "cards-crop1-5pct.png";
 //        String photoFileFull = "cards-crop1.png";
 //        BufferedImage imgMini = ImageIO.read(InterestRegionsExtract.class.getClassLoader().getResourceAsStream(photoFile));
 //        BufferedImage imgFull = ImageIO.read(InterestRegionsExtract.class.getClassLoader().getResourceAsStream(photoFileFull));
 
-        BufferedImage imgMini = ImageIO.read(new File("/home/denny/Pictures/IMG_20180515_204247-8pct.png"));
-        BufferedImage imgFull = ImageIO.read(new File("/home/denny/Pictures/IMG_20180515_204247.jpg"));
-
+        BufferedImage imgMini = ImageIO.read(new File("/home/denny/Downloads/IMG_20180519_134609-10pct.png"));
+        BufferedImage imgFull = ImageIO.read(new File("/home/denny/Downloads/IMG_20180519_134609.jpg"));
 
         InterestRegions iregs = new InterestRegions(imgMini);
 
@@ -34,8 +37,13 @@ public class InterestRegionsExtract {
             ImageIO.write(
                     r.getSubImage(imgMini.getWidth(), imgMini.getHeight(), imgFull),
                     "png",
-                    new File("/home/denny/Pictures/regionsOut/c6-" + regNo + ".png"));
+                    new File(dir,"c8-" + regNo + ".png"));
         }
+        for (Region r : iregs.regions) {
+            Set<XY> enclosure = r.findEnclosure(imgMini.getWidth(), imgMini.getHeight());
+            drawRegion(enclosure, imgMini, imgFull);
+        }
+        ImageIO.write(imgFull, "png", new File(dir,"FULL.png"));
     }
 
 }

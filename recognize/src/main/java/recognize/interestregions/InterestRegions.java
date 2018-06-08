@@ -183,7 +183,7 @@ public class InterestRegions {
 //        ImageIO.write(image, "png", new File(outFilesPrefix + "c3.png"));
 
 
-        for (int j = 0; j < 140; j++) {
+        for (int j = 0; j < 200; j++) {
             System.out.println("===================== region " + j);
             double maxDistance = 0;
             Pair best = null;

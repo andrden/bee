@@ -1,5 +1,5 @@
-# Import turicreate
 import turicreate as turi
+import os
 
 def loglab(path):
   l=lab(path)
@@ -28,8 +28,9 @@ def lab(path):
 # Load the training/test images from their respective directories
 training_data = turi.image_analysis.load_images('/home/denny/Pictures/turicreate/training')
 
-test_data = turi.image_analysis.load_images('/home/denny/Pictures/turicreate/test')
-#test_data = turi.image_analysis.load_images('/home/denny/Pictures/regionsOut')
+testpath = '/home/denny/Pictures/regionsOut'
+#test_data = turi.image_analysis.load_images('/home/denny/Pictures/turicreate/test')
+test_data = turi.image_analysis.load_images(testpath)
 
 # Provide the labels for the training dataset
 training_data['label'] = training_data['path'].apply(lambda path: loglab(path))
@@ -40,4 +41,9 @@ model = turi.image_classifier.create(
 predictions = model.predict(test_data)
 # Print the predictions
 for image in zip(test_data,predictions):
-    print (image[0]['path'],image[1])
+    type = image[1];
+    fpath = image[0]['path']
+    print (fpath, type)
+    if not os.path.isdir(testpath+"/"+type) :
+      os.mkdir(testpath+"/"+type)
+    os.rename(fpath, testpath+"/"+type+"/"+os.path.basename(fpath))
