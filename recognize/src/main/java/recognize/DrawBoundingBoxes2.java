@@ -1,22 +1,22 @@
 package recognize;
 
 import javafx.application.Application;
-import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.ArcType;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.FileInputStream;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class DrawBoundingBoxes2 extends Application {
@@ -25,7 +25,11 @@ public class DrawBoundingBoxes2 extends Application {
         launch(args);
     }
 
-    Image image2;
+    String fname = "/home/denny/Pictures/card-detect/train/8.jpg";
+
+    Image imageView;
+    BufferedImage bufferedImage;
+
     double startX;
     double startY;
 
@@ -37,14 +41,17 @@ public class DrawBoundingBoxes2 extends Application {
         if (type.equals("d")) return Color.ORANGE;
         if (type.equals("s")) return Color.BLACK;
         if (type.equals("c")) return Color.GRAY;
+        if (type.equals("4")) return Color.CYAN;
         if (type.equals("7")) return Color.GREEN;
+        if (type.equals("8")) return Color.YELLOW;
+        if (type.equals("k")) return Color.MAGENTA;
         throw new IllegalArgumentException(type);
     }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        image2 = new Image(new FileInputStream("/home/denny/Pictures/card-detect/train/1.jpg"),
-                800, 800, true, true);
+        imageView = new Image(new FileInputStream(fname), 800, 800, true, true);
+        bufferedImage = ImageIO.read(new File(fname));
 
         primaryStage.setTitle("Drawing Bounding Boxes");
         Group root = new Group();
@@ -54,6 +61,7 @@ public class DrawBoundingBoxes2 extends Application {
         canvas.setOnKeyPressed(keyEvent -> {
             rectType = keyEvent.getText();
             System.out.println("rectType=" + rectType);
+            printShapes();
         });
         canvas.setOnMousePressed(event -> {
             startX = event.getX();
@@ -74,7 +82,7 @@ public class DrawBoundingBoxes2 extends Application {
             rectangles.put(
                     new Rectangle(startX, startY, event.getX() - startX, event.getY() - startY),
                     rectType);
-            System.out.println("rectangles size = "+rectangles.size());
+            System.out.println("rectangles size = " + rectangles.size());
         });
         drawShapes(gc);
         root.getChildren().add(canvas);
@@ -82,8 +90,39 @@ public class DrawBoundingBoxes2 extends Application {
         primaryStage.show();
     }
 
+    void printShapes() {
+        Graphics2D graphics2D = (Graphics2D) bufferedImage.getGraphics();
+        double kx = bufferedImage.getWidth() / imageView.getWidth();
+        double ky = bufferedImage.getHeight() / imageView.getHeight();
+        System.out.println("[");
+        rectangles.forEach((r, t) ->
+                {
+                    int h = (int) Math.round(r.getHeight() * ky);
+                    int w = (int) Math.round(r.getWidth() * kx);
+                    int x = (int) Math.round((r.getX() + r.getWidth() / 2) * kx);
+                    int y = (int) Math.round((r.getY() + r.getHeight() / 2) * ky);
+                    System.out.printf("{'coordinates': {'height': %s, 'width': %s, 'x': %s, 'y': %s},  'label': '%s'},\n",
+                            h, w,
+                            x, y,
+                            t);
+                    Color c = rectColor(t);
+                    graphics2D.setColor(new java.awt.Color((float) c.getRed(), (float) c.getGreen(), (float) c.getBlue()));
+                    graphics2D.setStroke(new BasicStroke(3));
+                    graphics2D.drawRect(x - w / 2, y - h / 2, w, h);
+                }
+        );
+        System.out.println("]");
+        try {
+            File output = new File(fname + ".rect.png");
+            System.out.println("saving image with recatangles: " + output);
+            ImageIO.write(bufferedImage, "png", output);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void drawShapes(GraphicsContext gc) {
-        gc.drawImage(image2, 0, 0);
+        gc.drawImage(imageView, 0, 0);
         rectangles.forEach((r, t) -> {
             gc.setStroke(rectColor(t));
             gc.setLineWidth(2);
