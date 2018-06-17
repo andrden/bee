@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class DrawBoundingBoxes2 extends Application {
@@ -25,7 +26,7 @@ public class DrawBoundingBoxes2 extends Application {
         launch(args);
     }
 
-    String fname = "/home/denny/Pictures/card-detect/train/8.jpg";
+    String fname = "/home/denny/Pictures/card-detect/train/13.jpg";
 
     Image imageView;
     BufferedImage bufferedImage;
@@ -34,19 +35,7 @@ public class DrawBoundingBoxes2 extends Application {
     double startY;
 
     String rectType;
-    Map<Rectangle, String> rectangles = new HashMap<>();
-
-    Color rectColor(String type) {
-        if (type.equals("h")) return Color.RED;
-        if (type.equals("d")) return Color.ORANGE;
-        if (type.equals("s")) return Color.BLACK;
-        if (type.equals("c")) return Color.GRAY;
-        if (type.equals("4")) return Color.CYAN;
-        if (type.equals("7")) return Color.GREEN;
-        if (type.equals("8")) return Color.YELLOW;
-        if (type.equals("k")) return Color.MAGENTA;
-        throw new IllegalArgumentException(type);
-    }
+    Map<Rectangle, String> rectangles = new LinkedHashMap<>();
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -68,20 +57,21 @@ public class DrawBoundingBoxes2 extends Application {
             startY = event.getY();
 
             drawShapes(gc);
-            gc.setStroke(rectColor(rectType));
+            gc.setStroke(RectColors.rectColor(rectType));
             gc.setLineWidth(5);
             gc.strokeRect(event.getX(), event.getY(), 1, 1);
         });
         canvas.setOnMouseDragged(event -> {
             drawShapes(gc);
-            gc.setStroke(rectColor(rectType));
+            gc.setStroke(RectColors.rectColor(rectType));
             gc.setLineWidth(2);
             gc.strokeRect(startX, startY, event.getX() - startX, event.getY() - startY);
         });
         canvas.setOnMouseReleased(event -> {
-            rectangles.put(
-                    new Rectangle(startX, startY, event.getX() - startX, event.getY() - startY),
-                    rectType);
+            Rectangle rectangle = new Rectangle(startX, startY, event.getX() - startX, event.getY() - startY);
+            if (rectangle.getHeight() > 5 && rectangle.getWidth() > 5) {
+                rectangles.put(rectangle, rectType);
+            }
             System.out.println("rectangles size = " + rectangles.size());
         });
         drawShapes(gc);
@@ -105,7 +95,7 @@ public class DrawBoundingBoxes2 extends Application {
                             h, w,
                             x, y,
                             t);
-                    Color c = rectColor(t);
+                    Color c = RectColors.rectColor(t);
                     graphics2D.setColor(new java.awt.Color((float) c.getRed(), (float) c.getGreen(), (float) c.getBlue()));
                     graphics2D.setStroke(new BasicStroke(3));
                     graphics2D.drawRect(x - w / 2, y - h / 2, w, h);
@@ -124,7 +114,7 @@ public class DrawBoundingBoxes2 extends Application {
     private void drawShapes(GraphicsContext gc) {
         gc.drawImage(imageView, 0, 0);
         rectangles.forEach((r, t) -> {
-            gc.setStroke(rectColor(t));
+            gc.setStroke(RectColors.rectColor(t));
             gc.setLineWidth(2);
             gc.strokeRect(r.getX(), r.getY(), r.getWidth(), r.getHeight());
         });

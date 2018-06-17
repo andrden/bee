@@ -86,15 +86,111 @@ annot_map={"1.jpg":
 ],
 "8.jpg":
 [
-{'coordinates': {'height': 121, 'width': 188, 'x': 1680, 'y': 2379},  'label': '7'},
-{'coordinates': {'height': 121, 'width': 181, 'x': 2416, 'y': 2574},  'label': '7'},
-{'coordinates': {'height': 121, 'width': 181, 'x': 1287, 'y': 1841},  'label': '7'},
-{'coordinates': {'height': 121, 'width': 202, 'x': 2493, 'y': 1109},  'label': '7'},
-{'coordinates': {'height': 128, 'width': 181, 'x': 2866, 'y': 1643},  'label': '7'},
-{'coordinates': {'height': 114, 'width': 188, 'x': 1882, 'y': 4129},  'label': '7'},
-{'coordinates': {'height': 128, 'width': 202, 'x': 1284, 'y': 3330},  'label': '7'},
-{'coordinates': {'height': 128, 'width': 188, 'x': 2567, 'y': 2953},  'label': '7'},
+{'coordinates': {'height': 215, 'width': 121, 'x': 235, 'y': 1129},  'label': '4'},
+{'coordinates': {'height': 134, 'width': 208, 'x': 2564, 'y': 2943},  'label': '7'},
+{'coordinates': {'height': 128, 'width': 208, 'x': 1872, 'y': 4123},  'label': '7'},
+{'coordinates': {'height': 134, 'width': 228, 'x': 1290, 'y': 1841},  'label': '7'},
+{'coordinates': {'height': 108, 'width': 215, 'x': 2419, 'y': 2574},  'label': '7'},
+{'coordinates': {'height': 121, 'width': 195, 'x': 2476, 'y': 1109},  'label': '7'},
+{'coordinates': {'height': 235, 'width': 161, 'x': 961, 'y': 2335},  'label': '4'},
+{'coordinates': {'height': 114, 'width': 195, 'x': 1683, 'y': 2376},  'label': '7'},
+{'coordinates': {'height': 128, 'width': 228, 'x': 1270, 'y': 3330},  'label': '7'},
+{'coordinates': {'height': 128, 'width': 208, 'x': 2859, 'y': 1643},  'label': '7'},
+],
+"9.jpg":
+[
+{'coordinates': {'height': 128, 'width': 108, 'x': 417, 'y': 2678},  'label': '4'},
+{'coordinates': {'height': 155, 'width': 67, 'x': 1653, 'y': 2100},  'label': '7'},
+{'coordinates': {'height': 108, 'width': 94, 'x': 1028, 'y': 2863},  'label': '4'},
+{'coordinates': {'height': 134, 'width': 87, 'x': 2040, 'y': 3756},  'label': '4'},
+{'coordinates': {'height': 134, 'width': 94, 'x': 2325, 'y': 2164},  'label': '7'},
+{'coordinates': {'height': 128, 'width': 101, 'x': 2759, 'y': 2893},  'label': '7'},
+{'coordinates': {'height': 134, 'width': 81, 'x': 2137, 'y': 2769},  'label': '7'},
+{'coordinates': {'height': 134, 'width': 87, 'x': 1072, 'y': 1976},  'label': '7'},
+{'coordinates': {'height': 128, 'width': 94, 'x': 1606, 'y': 3014},  'label': '4'},
+{'coordinates': {'height': 114, 'width': 108, 'x': 1519, 'y': 2644},  'label': '7'},
+{'coordinates': {'height': 121, 'width': 108, 'x': 470, 'y': 1855},  'label': '7'},
+{'coordinates': {'height': 148, 'width': 108, 'x': 921, 'y': 2507},  'label': '7'},
+{'coordinates': {'height': 134, 'width': 121, 'x': 1546, 'y': 3555},  'label': '4'},
+{'coordinates': {'height': 121, 'width': 87, 'x': 2228, 'y': 3058},  'label': '4'},
+{'coordinates': {'height': 134, 'width': 87, 'x': 2644, 'y': 3844},  'label': '4'},
+],
+"10.jpg":
+[
+{'coordinates': {'height': 108, 'width': 155, 'x': 2631, 'y': 2910},  'label': '7'},
+{'coordinates': {'height': 108, 'width': 148, 'x': 1660, 'y': 1519},  'label': '4'},
+{'coordinates': {'height': 94, 'width': 155, 'x': 696, 'y': 3414},  'label': '4'},
+{'coordinates': {'height': 94, 'width': 101, 'x': 2651, 'y': 3468},  'label': '4'},
+{'coordinates': {'height': 108, 'width': 148, 'x': 1808, 'y': 3837},  'label': '4'},
+{'coordinates': {'height': 108, 'width': 141, 'x': 1287, 'y': 2587},  'label': '4'},
+{'coordinates': {'height': 114, 'width': 168, 'x': 1361, 'y': 3316},  'label': '7'},
+{'coordinates': {'height': 94, 'width': 141, 'x': 2470, 'y': 1310},  'label': '4'},
+{'coordinates': {'height': 94, 'width': 128, 'x': 2597, 'y': 2103},  'label': '7'},
+{'coordinates': {'height': 101, 'width': 141, 'x': 1394, 'y': 1824},  'label': '4'},
+{'coordinates': {'height': 114, 'width': 168, 'x': 1280, 'y': 1119},  'label': '7'},
+{'coordinates': {'height': 121, 'width': 168, 'x': 769, 'y': 4267},  'label': '7'},
+{'coordinates': {'height': 94, 'width': 141, 'x': 1710, 'y': 2197},  'label': '7'},
+{'coordinates': {'height': 94, 'width': 168, 'x': 608, 'y': 1835},  'label': '7'},
+{'coordinates': {'height': 134, 'width': 161, 'x': 1714, 'y': 2964},  'label': '7'},
+{'coordinates': {'height': 101, 'width': 128, 'x': 769, 'y': 2557},  'label': '4'},
+],
+"11.jpg":
+[
+{'coordinates': {'height': 94, 'width': 161, 'x': 3555, 'y': 2016},  'label': '7'},
+{'coordinates': {'height': 74, 'width': 134, 'x': 2601, 'y': 360},  'label': '7'},
+{'coordinates': {'height': 134, 'width': 114, 'x': 904, 'y': 1028},  'label': '4'},
+{'coordinates': {'height': 134, 'width': 108, 'x': 3132, 'y': 786},  'label': '7'},
+{'coordinates': {'height': 175, 'width': 108, 'x': 3246, 'y': 1801},  'label': '7'},
+{'coordinates': {'height': 108, 'width': 134, 'x': 1828, 'y': 1438},  'label': '4'},
+{'coordinates': {'height': 108, 'width': 134, 'x': 2890, 'y': 739},  'label': '7'},
+{'coordinates': {'height': 121, 'width': 121, 'x': 1855, 'y': 934},  'label': '7'},
+{'coordinates': {'height': 114, 'width': 134, 'x': 2903, 'y': 1583},  'label': '4'},
+{'coordinates': {'height': 114, 'width': 148, 'x': 2083, 'y': 1945},  'label': '4'},
+{'coordinates': {'height': 101, 'width': 148, 'x': 2628, 'y': 2664},  'label': '7'},
+{'coordinates': {'height': 134, 'width': 161, 'x': 981, 'y': 1841},  'label': '4'},
+{'coordinates': {'height': 101, 'width': 155, 'x': 1596, 'y': 575},  'label': '7'},
+{'coordinates': {'height': 101, 'width': 161, 'x': 3219, 'y': 1300},  'label': '4'},
+{'coordinates': {'height': 101, 'width': 148, 'x': 2164, 'y': 1415},  'label': '4'},
+],
+"12.jpg":
+[
+{'coordinates': {'height': 108, 'width': 121, 'x': 2076, 'y': 114},  'label': '7'},
+{'coordinates': {'height': 155, 'width': 108, 'x': 3105, 'y': 561},  'label': '4'},
+{'coordinates': {'height': 108, 'width': 87, 'x': 951, 'y': 1042},  'label': '4'},
+{'coordinates': {'height': 161, 'width': 114, 'x': 3666, 'y': 2614},  'label': '7'},
+{'coordinates': {'height': 134, 'width': 101, 'x': 1697, 'y': 2412},  'label': '4'},
+{'coordinates': {'height': 101, 'width': 101, 'x': 2234, 'y': 837},  'label': '7'},
+{'coordinates': {'height': 128, 'width': 81, 'x': 927, 'y': 2174},  'label': '4'},
+{'coordinates': {'height': 128, 'width': 101, 'x': 1791, 'y': 2040},  'label': '7'},
+{'coordinates': {'height': 101, 'width': 141, 'x': 2853, 'y': 2181},  'label': '4'},
+{'coordinates': {'height': 114, 'width': 81, 'x': 1895, 'y': 1092},  'label': '7'},
+{'coordinates': {'height': 121, 'width': 101, 'x': 3048, 'y': 1472},  'label': '7'},
+{'coordinates': {'height': 101, 'width': 128, 'x': 1932, 'y': 2389},  'label': '4'},
+{'coordinates': {'height': 121, 'width': 87, 'x': 1401, 'y': 1714},  'label': '4'},
+{'coordinates': {'height': 141, 'width': 114, 'x': 3303, 'y': 1549},  'label': '7'},
+{'coordinates': {'height': 128, 'width': 101, 'x': 3847, 'y': 1280},  'label': '4'},
+{'coordinates': {'height': 81, 'width': 121, 'x': 1754, 'y': 1021},  'label': '7'},
+],
+"13.jpg":
+[
+{'coordinates': {'height': 81, 'width': 134, 'x': 3320, 'y': 168},  'label': '7'},
+{'coordinates': {'height': 108, 'width': 87, 'x': 1515, 'y': 1982},  'label': '4'},
+{'coordinates': {'height': 114, 'width': 114, 'x': 2026, 'y': 1421},  'label': '4'},
+{'coordinates': {'height': 81, 'width': 148, 'x': 3441, 'y': 1976},  'label': '4'},
+{'coordinates': {'height': 101, 'width': 114, 'x': 2295, 'y': 165},  'label': '4'},
+{'coordinates': {'height': 108, 'width': 94, 'x': 1566, 'y': 948},  'label': '7'},
+{'coordinates': {'height': 67, 'width': 148, 'x': 1068, 'y': 2003},  'label': '7'},
+{'coordinates': {'height': 94, 'width': 108, 'x': 2950, 'y': 1028},  'label': '7'},
+{'coordinates': {'height': 81, 'width': 121, 'x': 2124, 'y': 1035},  'label': '4'},
+{'coordinates': {'height': 74, 'width': 128, 'x': 2927, 'y': 2765},  'label': '4'},
+{'coordinates': {'height': 108, 'width': 108, 'x': 1277, 'y': 1068},  'label': '7'},
+{'coordinates': {'height': 101, 'width': 121, 'x': 2856, 'y': 1798},  'label': '4'},
+{'coordinates': {'height': 101, 'width': 81, 'x': 1042, 'y': 252},  'label': '7'},
+{'coordinates': {'height': 94, 'width': 128, 'x': 3175, 'y': 1828},  'label': '7'},
+{'coordinates': {'height': 94, 'width': 121, 'x': 2379, 'y': 2318},  'label': '4'},
+{'coordinates': {'height': 81, 'width': 128, 'x': 3451, 'y': 927},  'label': '7'},
 ]
+
 
 
 }
@@ -102,7 +198,7 @@ annot_map={"1.jpg":
 def logannot(path):
   n = os.path.basename(path)
   a=annot(n)
-  print(n, path, a)
+  print(n, path, len(a))
   return a
 
 def annot(n):
@@ -121,6 +217,6 @@ sframe['annotations'] = sframe['path'].apply(lambda path: logannot(path))
 print(sframe)
 
 model = tc.object_detector.create(sframe, max_iterations=1000)
-model.save('mymodel-8-1000.model')
+model.save('mymodel-10-1000.model')
 
 
