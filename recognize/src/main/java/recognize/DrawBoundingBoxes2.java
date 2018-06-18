@@ -26,7 +26,7 @@ public class DrawBoundingBoxes2 extends Application {
         launch(args);
     }
 
-    String fname = "/home/denny/Pictures/card-detect/train/13.jpg";
+    String fname = "/home/denny/Pictures/card-detect/train/17.jpg";
 
     Image imageView;
     BufferedImage bufferedImage;
