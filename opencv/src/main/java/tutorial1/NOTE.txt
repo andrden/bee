@@ -1,0 +1,2 @@
+originally copied from:
+https://github.com/opencv-java/getting-started/blob/master/FXHelloCV/src/it/polito/elite/teaching/cv/utils/Utils.java
