@@ -110,6 +110,7 @@ public class FXHelloCVController {
 
                 // if the frame is not empty, process it
                 if (!frame.empty()) {
+                    Core.flip(frame, frame, 1/*around y, flips x coords*/);
                     //Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2GRAY);
                     Mat submat = frame.submat(new Rect(0, 0, logo.width(), logo.height()));
                     //logo.copyTo(submat);
