@@ -40,7 +40,7 @@ public class FXHelloCVController {
     // a flag to change the button behavior
     private boolean cameraActive = false;
     // the id of the camera to be used
-    private static int cameraId = 0;
+    private static int cameraId = 1;
 
     Mat logo = Imgcodecs.imread("/home/denny/proj/bee/recognize/src/main/resources/cards/8.png");
 
