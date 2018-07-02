@@ -1,7 +1,6 @@
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
-import tutorial1.FXHelloCV;
 import tutorial1.Utils;
 
 import javax.imageio.ImageIO;
@@ -10,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /*
 To run:
@@ -74,24 +74,22 @@ public class MainCV {
         lines.sort(Comparator.comparingDouble(Line::len2).reversed());
         for (int i = 0; i < 1; i++) {
             Line line1 = lines.get(i);
+
+            List<Line> byDirection = lines.stream()
+                    .filter(l -> l.touchingDistance(line1)>100)
+                    .collect(Collectors.toList());
+            byDirection.sort(Comparator.comparingDouble(line1::directionDiff));
+            Line line2 = byDirection.get(0);
+
             Imgproc.line(dest, line1.p1, line1.p2, new Scalar(0, 255, 0), 7, Imgproc.LINE_AA, 0);
+            Imgproc.line(dest, line2.p1, line2.p2, new Scalar(255, 255, 0), 7, Imgproc.LINE_AA, 0);
+
+            System.out.println(line1);
+            System.out.println(line2);
+            System.out.println(line1.directionDiff(line2));
         }
 
         ImageIO.write(Utils.matToBufferedImage(dest), "png", new File(imgFile + ".edges.png"));
-    }
-
-    static class Line {
-        Point p1;
-        Point p2;
-
-        public Line(Point p1, Point p2) {
-            this.p1 = p1;
-            this.p2 = p2;
-        }
-
-        public double len2() {
-            return Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2);
-        }
     }
 
     private Mat doCanny(Mat frame) {
