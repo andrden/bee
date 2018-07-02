@@ -9,6 +9,10 @@ class Line {
         this.p2 = p2;
     }
 
+    public Line reverse() {
+        return new Line(p2, p1);
+    }
+
     public double len2() {
         return Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2);
     }
@@ -33,8 +37,41 @@ class Line {
                 Math.min(dist2(p1, other.p2), dist2(p2, other.p2))));
     }
 
+    public double mulScalar(Line other) {
+        return mulScalar(vector(), other.vector());
+    }
+
+    public double side(Point p) {
+        return mulVector(vector(), new Point(p.x - p1.x, p.y - p1.y));
+    }
+
+    Point vector() {
+        return new Point(p2.x - p1.x, p2.y - p1.y);
+    }
+
+    static double mulScalar(Point vector1, Point vector2) {
+        return vector1.x * vector2.x + vector1.y * vector2.y;
+    }
+
+    static double mulVector(Point vector1, Point vector2) {
+        return vector1.x * vector2.y - vector1.y * vector2.x;
+    }
+
     static double dist2(Point a, Point b) {
         return Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2);
+    }
+
+    static boolean sameSign(double... args) {
+        if (args[0] > 0) {
+            for (double v : args) {
+                if (v <= 0) return false;
+            }
+        } else if (args[0] < 0) {
+            for (double v : args) {
+                if (v >= 0) return false;
+            }
+        } else return false;
+        return true;
     }
 
     @Override

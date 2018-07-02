@@ -76,17 +76,29 @@ public class MainCV {
             Line line1 = lines.get(i);
 
             List<Line> byDirection = lines.stream()
-                    .filter(l -> l.touchingDistance(line1)>100)
+                    .filter(l -> l.touchingDistance(line1) > 100)
                     .collect(Collectors.toList());
             byDirection.sort(Comparator.comparingDouble(line1::directionDiff));
             Line line2 = byDirection.get(0);
+            if (line1.mulScalar(line2) < 0) {
+                line2 = line2.reverse();
+            }
 
             Imgproc.line(dest, line1.p1, line1.p2, new Scalar(0, 255, 0), 7, Imgproc.LINE_AA, 0);
             Imgproc.line(dest, line2.p1, line2.p2, new Scalar(255, 255, 0), 7, Imgproc.LINE_AA, 0);
 
-            System.out.println(line1);
-            System.out.println(line2);
+            System.out.println(line1 + " len="+Math.sqrt(line1.len2()));
+            System.out.println(line2 + " len="+Math.sqrt(line2.len2()));
             System.out.println(line1.directionDiff(line2));
+
+            for(Line l : lines){
+                if(line1.side(l.p1)*line2.side(l.p1)<0 && line1.side(l.p2)*line2.side(l.p2)<0
+                        && l.len2()>Math.pow(300,2)
+                        && Line.sameSign(l.side(line1.p1), l.side(line1.p2), l.side(line2.p1), l.side(line2.p2))
+                        ){
+                    Imgproc.line(dest, l.p1, l.p2, new Scalar(0, 255, 255), 7, Imgproc.LINE_AA, 0);
+                }
+            }
         }
 
         ImageIO.write(Utils.matToBufferedImage(dest), "png", new File(imgFile + ".edges.png"));
