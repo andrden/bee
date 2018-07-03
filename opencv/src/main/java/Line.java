@@ -74,6 +74,13 @@ class Line {
         return true;
     }
 
+    Line directedAs(Line other){
+        if (mulScalar(other) < 0) {
+            return reverse();
+        }
+        return this;
+    }
+
     @Override
     public String toString() {
         return "Line{" +
