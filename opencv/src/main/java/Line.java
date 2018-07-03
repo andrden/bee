@@ -33,45 +33,20 @@ class Line {
 
     public double touchingDistance(Line other) {
         return Math.sqrt(Math.min(
-                Math.min(dist2(p1, other.p1), dist2(p2, other.p1)),
-                Math.min(dist2(p1, other.p2), dist2(p2, other.p2))));
+                Math.min(Util.dist2(p1, other.p1), Util.dist2(p2, other.p1)),
+                Math.min(Util.dist2(p1, other.p2), Util.dist2(p2, other.p2))));
     }
 
     public double mulScalar(Line other) {
-        return mulScalar(vector(), other.vector());
+        return Util.mulScalar(vector(), other.vector());
     }
 
     public double side(Point p) {
-        return mulVector(vector(), new Point(p.x - p1.x, p.y - p1.y));
+        return Util.mulVector(vector(), new Point(p.x - p1.x, p.y - p1.y));
     }
 
     Point vector() {
         return new Point(p2.x - p1.x, p2.y - p1.y);
-    }
-
-    static double mulScalar(Point vector1, Point vector2) {
-        return vector1.x * vector2.x + vector1.y * vector2.y;
-    }
-
-    static double mulVector(Point vector1, Point vector2) {
-        return vector1.x * vector2.y - vector1.y * vector2.x;
-    }
-
-    static double dist2(Point a, Point b) {
-        return Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2);
-    }
-
-    static boolean sameSign(double... args) {
-        if (args[0] > 0) {
-            for (double v : args) {
-                if (v <= 0) return false;
-            }
-        } else if (args[0] < 0) {
-            for (double v : args) {
-                if (v >= 0) return false;
-            }
-        } else return false;
-        return true;
     }
 
     Line directedAs(Line other){

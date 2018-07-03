@@ -87,7 +87,7 @@ public class MainCV {
             List<Line> linesAcross = lines.stream().filter(l ->
                     line1.side(l.p1) * line2.side(l.p1) < 0 && line1.side(l.p2) * line2.side(l.p2) < 0
                             && l.len2() > Math.pow(300, 2)
-                            && Line.sameSign(l.side(line1.p1), l.side(line1.p2), l.side(line2.p1), l.side(line2.p2)))
+                            && Util.sameSign(l.side(line1.p1), l.side(line1.p2), l.side(line2.p1), l.side(line2.p2)))
                     .collect(Collectors.toList());
 
 //            for (Line l : linesAcross) {
@@ -101,9 +101,32 @@ public class MainCV {
             System.out.println(across1.vector() + " len=" + Math.sqrt(across1.len2()));
             System.out.println(across2.vector() + " len=" + Math.sqrt(across2.len2()));
             System.out.println(across1.directionDiff(across2));
+
+            Point int00 = intersection(line2, across1);
+            Imgproc.circle(dest, int00, 10, new Scalar(100,255,255));
         }
 
         ImageIO.write(Utils.matToBufferedImage(dest), "png", new File(imgFile + ".edges.png"));
+    }
+
+    Point intersection(Line l1, Line l2){
+      return intersection(l1.p1, l1.p2, l2.p1, l2.p2);
+    }
+
+    // Finds the intersection of two lines, or returns false.
+// The lines are defined by (o1, p1) and (o2, p2).
+    Point intersection(Point o1, Point p1, Point o2, Point p2)
+    {
+        Point x = Util.sub(o2,o1);
+        Point d1 = Util.sub(p1,o1);
+        Point d2 = Util.sub(p2, o2);
+
+        double cross = d1.x*d2.y - d1.y*d2.x;
+        if (Math.abs(cross) < /*EPS*/1e-8)
+            return null;
+
+        double t1 = (x.x * d2.y - x.y * d2.x)/cross;
+        return Util.add(o1, Util.mul(d1, t1));
     }
 
     Line closestDirection(List<Line> lines, Line first){
