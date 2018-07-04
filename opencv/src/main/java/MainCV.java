@@ -11,6 +11,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opencv.core.Core.BORDER_CONSTANT;
+import static org.opencv.imgproc.Imgproc.INTER_CUBIC;
+import static org.opencv.imgproc.Imgproc.INTER_LINEAR;
+
 /*
 To run:
 -Djava.library.path=/home/denny/opencv-3.4.1/build/lib
@@ -103,33 +107,48 @@ public class MainCV {
             System.out.println(across1.directionDiff(across2));
 
             Point int00 = intersection(line2, across1);
-            Imgproc.circle(dest, int00, 10, new Scalar(100,255,255));
+            Imgproc.circle(dest, int00, 10, new Scalar(100, 255, 255));
+
+            Point int10 = intersection(line1, across1);
+            Imgproc.circle(dest, int10, 10, new Scalar(100, 255, 255));
+
+            Point int01 = intersection(line2, across2);
+            Imgproc.circle(dest, int01, 10, new Scalar(100, 255, 255));
+
+            int w = 3*225;
+            int h = 3*350;
+            Mat transform = Imgproc.getAffineTransform(new MatOfPoint2f(int00, int10, int01),
+                    new MatOfPoint2f(new Point(0,0), new Point(w,0), new Point(0,h)));
+
+            Mat warp = new Mat(); // will hold the results of the detection
+            Imgproc.warpAffine(img, warp, transform, new Size(w,h), INTER_CUBIC, BORDER_CONSTANT, new Scalar(0,0,0));
+
+            ImageIO.write(Utils.matToBufferedImage(warp), "png", new File(imgFile + ".warp.png"));
         }
 
         ImageIO.write(Utils.matToBufferedImage(dest), "png", new File(imgFile + ".edges.png"));
     }
 
-    Point intersection(Line l1, Line l2){
-      return intersection(l1.p1, l1.p2, l2.p1, l2.p2);
+    Point intersection(Line l1, Line l2) {
+        return intersection(l1.p1, l1.p2, l2.p1, l2.p2);
     }
 
     // Finds the intersection of two lines, or returns false.
 // The lines are defined by (o1, p1) and (o2, p2).
-    Point intersection(Point o1, Point p1, Point o2, Point p2)
-    {
-        Point x = Util.sub(o2,o1);
-        Point d1 = Util.sub(p1,o1);
+    Point intersection(Point o1, Point p1, Point o2, Point p2) {
+        Point x = Util.sub(o2, o1);
+        Point d1 = Util.sub(p1, o1);
         Point d2 = Util.sub(p2, o2);
 
-        double cross = d1.x*d2.y - d1.y*d2.x;
+        double cross = d1.x * d2.y - d1.y * d2.x;
         if (Math.abs(cross) < /*EPS*/1e-8)
             return null;
 
-        double t1 = (x.x * d2.y - x.y * d2.x)/cross;
+        double t1 = (x.x * d2.y - x.y * d2.x) / cross;
         return Util.add(o1, Util.mul(d1, t1));
     }
 
-    Line closestDirection(List<Line> lines, Line first){
+    Line closestDirection(List<Line> lines, Line first) {
         List<Line> byDirection = lines.stream()
                 .filter(l -> l.touchingDistance(first) > 100)
                 .collect(Collectors.toList());
