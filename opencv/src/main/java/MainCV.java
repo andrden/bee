@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 
 import static org.opencv.core.Core.BORDER_CONSTANT;
 import static org.opencv.imgproc.Imgproc.INTER_CUBIC;
-import static org.opencv.imgproc.Imgproc.INTER_LINEAR;
 
 /*
 To run:
@@ -93,10 +92,10 @@ public class MainCV {
 
             System.out.println(line1.vector() + " len=" + Math.sqrt(line1.len2()));
             System.out.println(line2.vector() + " len=" + Math.sqrt(line2.len2()));
-            System.out.println(line1.directionDiff(line2));
+            System.out.println("direction diff= " + line1.directionDiff(line2));
 
             List<Line> linesAcross = lines.stream().filter(l ->
-                    isBetween(l, line1, line2)
+                    Util.isBetween(l, line1, line2)
                             && l.len2() > Math.pow(300, 2)
                             && Util.sameSign(l.side(line1.p1), l.side(line1.p2), l.side(line2.p1), l.side(line2.p2)))
                     .collect(Collectors.toList());
@@ -112,7 +111,7 @@ public class MainCV {
                 Imgproc.line(dest, across2.p1, across2.p2, new Scalar(0, 255, 255), 7, Imgproc.LINE_AA, 0);
                 System.out.println(across1.vector() + " len=" + Math.sqrt(across1.len2()));
                 System.out.println(across2.vector() + " len=" + Math.sqrt(across2.len2()));
-                System.out.println(across1.directionDiff(across2));
+                System.out.println("direction diff= " + across1.directionDiff(across2));
 
                 Card card = new Card(line1, line2, across1, across2);
                 cards.add(card);
@@ -121,14 +120,6 @@ public class MainCV {
         cards.get(0).warp(dest, img, imgFile);
 
         ImageIO.write(Utils.matToBufferedImage(dest), "png", new File(imgFile + ".edges.png"));
-    }
-
-    private boolean isBetween(Line l, Line line1, Line line2) {
-        return line1.side(l.p1) * line2.side(l.p1) < 0 && line1.side(l.p2) * line2.side(l.p2) < 0;
-    }
-
-    private static boolean isBetween(Point p, Line line1, Line line2) {
-        return line1.side(p) * line2.side(p) < 0;
     }
 
     static class Card {
@@ -143,8 +134,8 @@ public class MainCV {
         }
 
         boolean intersects(Line line) {
-            return (isBetween(line.p1, line1, line2) && isBetween(line.p1, across1, across2)) ||
-                    (isBetween(line.p2, line1, line2) && isBetween(line.p2, across1, across2)) ||
+            return (Util.isBetween(line.p1, line1, line2) && Util.isBetween(line.p1, across1, across2)) ||
+                    (Util.isBetween(line.p2, line1, line2) && Util.isBetween(line.p2, across1, across2)) ||
                     line1.touchingDistance(line) < 50 ||
                     line2.touchingDistance(line) < 50 ||
                     across1.touchingDistance(line) < 50 ||
@@ -153,13 +144,13 @@ public class MainCV {
         }
 
         void warp(Mat dest, Mat img, String imgFile) throws IOException {
-            Point int00 = intersection(line2, across1);
+            Point int00 = Util.intersection(line2, across1);
             Imgproc.circle(dest, int00, 10, new Scalar(100, 255, 255));
 
-            Point int10 = intersection(line1, across1);
+            Point int10 = Util.intersection(line1, across1);
             Imgproc.circle(dest, int10, 10, new Scalar(100, 255, 255));
 
-            Point int01 = intersection(line2, across2);
+            Point int01 = Util.intersection(line2, across2);
             Imgproc.circle(dest, int01, 10, new Scalar(100, 255, 255));
 
             int w = 3 * 225;
@@ -174,28 +165,11 @@ public class MainCV {
         }
     }
 
-    static Point intersection(Line l1, Line l2) {
-        return intersection(l1.p1, l1.p2, l2.p1, l2.p2);
-    }
-
-    // Finds the intersection of two lines, or returns false.
-// The lines are defined by (o1, p1) and (o2, p2).
-    static Point intersection(Point o1, Point p1, Point o2, Point p2) {
-        Point x = Util.sub(o2, o1);
-        Point d1 = Util.sub(p1, o1);
-        Point d2 = Util.sub(p2, o2);
-
-        double cross = d1.x * d2.y - d1.y * d2.x;
-        if (Math.abs(cross) < /*EPS*/1e-8)
-            return null;
-
-        double t1 = (x.x * d2.y - x.y * d2.x) / cross;
-        return Util.add(o1, Util.mul(d1, t1));
-    }
-
     Line closestDirection(List<Line> lines, Line first) {
         List<Line> byDirection = lines.stream()
                 .filter(l -> l.touchingDistance(first) > 100)
+                .filter(l -> Util.dist2(l.p1, first) > 100 * 100)
+                .filter(l -> Util.dist2(l.p2, first) > 100 * 100)
                 .collect(Collectors.toList());
         byDirection.sort(Comparator.comparingDouble(first::directionDiff));
         Line line2 = byDirection.get(0).directedAs(first);
